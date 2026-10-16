@@ -20,7 +20,16 @@ type GmailInbox =
   | { status: "connected"; unreadCount: number; emails: GmailEmail[] }
   | { status: "reconnect" }
   | { status: "error" };
-type DashboardProps = { ownerName: string; tasks: Task[]; hasTaskError: boolean; hasReminderError: boolean; gmail: GmailInbox };
+type CalendarPreviewDay = { date: string; dayName: string; dayNumber: string; isToday: boolean; tasks: { id: string; title: string; done: boolean }[] };
+type DashboardProps = {
+  ownerName: string;
+  tasks: Task[];
+  hasTaskError: boolean;
+  hasReminderError: boolean;
+  gmail: GmailInbox;
+  calendarDays: CalendarPreviewDay[];
+  calendarRange: string;
+};
 
 function dueLabel(date: string | null): string {
   if (!date) return "No due date";
@@ -58,7 +67,7 @@ function relativeTime(value: string): string {
   return `${days}d ago`;
 }
 
-export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gmail }: DashboardProps) {
+export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gmail, calendarDays, calendarRange }: DashboardProps) {
   const [dialogTask, setDialogTask] = useState<Task | null | undefined>(undefined);
   const [reminderTask, setReminderTask] = useState<Task | null>(null);
   const [dialogList, setDialogList] = useState<Task["list"]>("home_admin");
@@ -167,8 +176,17 @@ export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gm
             {gmail.status === "error" && <div className="integration-empty">Inbox is temporarily unavailable. Please refresh to try again.</div>}
           </section>
           <section className="dashboard-card calendar-card">
-            <div className="section-heading compact"><h2><CalendarDays size={19} /> Calendar Preview</h2><span className="accent-text">Next 8 days</span></div>
-            <div className="calendar-empty">Your upcoming task dates will appear here.</div>
+            <div className="section-heading compact"><h2><CalendarDays size={19} /> Calendar Preview</h2><span className="accent-text">{calendarRange}</span></div>
+            {hasTaskError ? <div className="calendar-empty">Calendar tasks could not be loaded.</div> : <div className="calendar-grid" aria-label="Next eight days">
+              {calendarDays.map((day) => <article className={`calendar-day ${day.isToday ? "is-today" : ""}`} key={day.date} aria-label={`${day.dayName}, ${day.date}${day.isToday ? ", today" : ""}`}>
+                <span className="calendar-weekday">{day.dayName}</span>
+                <strong>{day.dayNumber}</strong>
+                {day.tasks.length > 0 ? <ul>
+                  {day.tasks.slice(0, 2).map((task) => <li className={task.done ? "is-done" : ""} key={task.id}>{task.title}</li>)}
+                  {day.tasks.length > 2 && <li className="calendar-more">+{day.tasks.length - 2} more</li>}
+                </ul> : <span className="calendar-none">No tasks</span>}
+              </article>)}
+            </div>}
           </section>
           <section className="dashboard-card todo-card">
             <div className="section-heading compact"><h2>To-Do List</h2><button className="primary-pill" onClick={() => openNew("todo")}><Plus size={16} /> Add task</button></div>

@@ -3,6 +3,7 @@ import { requireOwner } from "@/lib/auth";
 import { getSupabaseAdmin } from "@/lib/db";
 import { Dashboard } from "@/components/dashboard";
 import { getImportantEmails } from "@/lib/integrations/gmail";
+import { buildCalendarPreview } from "@/lib/calendar";
 
 export default function Home() {
   return (
@@ -22,6 +23,7 @@ async function DashboardData() {
   ]);
 
   const tasks = tasksResult.error ? [] : tasksResult.data ?? [];
+  const calendar = buildCalendarPreview(tasks);
   const reminders = remindersResult.error ? [] : remindersResult.data ?? [];
   const reminderByTask = new Map<string, string>();
   for (const reminder of reminders) {
@@ -35,6 +37,8 @@ async function DashboardData() {
       hasTaskError={Boolean(tasksResult.error)}
       hasReminderError={Boolean(remindersResult.error)}
       gmail={gmail}
+      calendarDays={calendar.days}
+      calendarRange={calendar.range}
     />
   );
 }

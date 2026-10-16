@@ -7,7 +7,7 @@ import { forbidden, redirect } from "next/navigation";
 import { encryptSecret } from "@/lib/crypto";
 import { getSupabaseAdmin } from "@/lib/db";
 
-const googleScope = "openid email profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.events.readonly";
+const googleScope = "openid email profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.events.readonly https://www.googleapis.com/auth/calendar.calendarlist.readonly";
 
 function isOwnerEmail(email: string | null | undefined): boolean {
   const ownerEmail = process.env.OWNER_EMAIL?.trim().toLowerCase();

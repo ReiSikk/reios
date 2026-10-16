@@ -12,6 +12,9 @@ const eventListSchema = z.object({
     htmlLink: z.string().optional(),
   }).passthrough()).optional(),
 }).passthrough();
+const calendarListSchema = z.object({
+  items: z.array(z.object({ id: z.string() }).passthrough()).optional(),
+}).passthrough();
 
 export type GoogleCalendarEvent = {
   id: string;
@@ -69,7 +72,7 @@ function calendarBounds(now: Date): { timeMin: string; timeMax: string } {
   };
 }
 
-async function fetchEvents(accessToken: string, timeMin: string, timeMax: string): Promise<Response> {
+async function fetchEvents(accessToken: string, calendarId: string, timeMin: string, timeMax: string): Promise<Response> {
   const query = new URLSearchParams({
     timeMin,
     timeMax,
@@ -77,7 +80,7 @@ async function fetchEvents(accessToken: string, timeMin: string, timeMax: string
     orderBy: "startTime",
     maxResults: "100",
   });
-  return fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${query}`, {
+  return fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${query}`, {
     headers: { authorization: `Bearer ${accessToken}` },
     cache: "no-store",
   });
@@ -86,26 +89,47 @@ async function fetchEvents(accessToken: string, timeMin: string, timeMax: string
 async function loadEvents(): Promise<GoogleCalendarResult> {
   const { timeMin, timeMax } = calendarBounds(new Date());
   let accessToken = await getGoogleAccessToken();
-  let response = await fetchEvents(accessToken, timeMin, timeMax);
-  if (response.status === 401) {
+  const calendarListUrl = "https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=250";
+  let calendarResponse = await fetch(calendarListUrl, {
+    headers: { authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+  });
+  if (calendarResponse.status === 401) {
     accessToken = await getGoogleAccessToken(true);
-    response = await fetchEvents(accessToken, timeMin, timeMax);
+    calendarResponse = await fetch(calendarListUrl, {
+      headers: { authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
   }
-  if (response.status === 401 || response.status === 403) throw new RevokedGoogleToken("Google Calendar access was rejected.");
-  if (!response.ok) throw new Error("Google Calendar events could not be loaded.");
-  const parsed = eventListSchema.safeParse(await response.json());
-  if (!parsed.success) throw new Error("Google Calendar returned invalid events.");
+  if (calendarResponse.status === 401 || calendarResponse.status === 403) throw new RevokedGoogleToken("Google Calendar access was rejected.");
+  if (!calendarResponse.ok) throw new Error("Google Calendar list could not be loaded.");
+  const calendarList = calendarListSchema.safeParse(await calendarResponse.json());
+  if (!calendarList.success) throw new Error("Google returned an invalid calendar list.");
+
+  const calendarIds = (calendarList.data.items ?? []).map((calendar) => calendar.id);
+  let responses = await Promise.all(calendarIds.map((calendarId) => fetchEvents(accessToken, calendarId, timeMin, timeMax)));
+  if (responses.some((response) => response.status === 401)) {
+    accessToken = await getGoogleAccessToken(true);
+    responses = await Promise.all(calendarIds.map((calendarId) => fetchEvents(accessToken, calendarId, timeMin, timeMax)));
+  }
+  if (responses.some((response) => response.status === 401 || response.status === 403)) throw new RevokedGoogleToken("Google Calendar access was rejected.");
+  if (responses.some((response) => !response.ok)) throw new Error("Google Calendar events could not be loaded.");
+  const eventResults = await Promise.all(responses.map(async (response) => eventListSchema.safeParse(await response.json())));
+  if (eventResults.some((result) => !result.success)) throw new Error("Google Calendar returned invalid events.");
 
   return {
     status: "connected",
-    events: (parsed.data.items ?? []).flatMap((event) => {
-      const startsAt = event.start.dateTime ?? event.start.date;
-      return startsAt ? [{
-        id: event.id,
-        title: event.summary?.trim() || "(untitled event)",
-        startsAt,
-        link: event.htmlLink ?? null,
-      }] : [];
+    events: eventResults.flatMap((result, index) => {
+      if (!result.success) return [];
+      return (result.data.items ?? []).flatMap((event) => {
+        const startsAt = event.start.dateTime ?? event.start.date;
+        return startsAt ? [{
+          id: `${calendarIds[index]}:${event.id}`,
+          title: event.summary?.trim() || "(untitled event)",
+          startsAt,
+          link: event.htmlLink ?? null,
+        }] : [];
+      });
     }),
   };
 }

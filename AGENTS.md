@@ -130,7 +130,7 @@ Complete one phase, run lint + typecheck + manual verification, commit, then sto
 - **Done when**: app runs, migration applies to the Supabase project, `npm run build` passes.
 
 ### Phase 1: Authentication
-- Auth.js with Google provider, `access_type=offline`, `prompt=consent`, scopes `openid email profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.events.readonly`.
+- Auth.js with Google provider, `access_type=offline`, `prompt=consent`, scopes `openid email profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.events.readonly https://www.googleapis.com/auth/calendar.calendarlist.readonly`.
 - `signIn` callback rejects any email that is not `OWNER_EMAIL`.
 - On sign-in, store the Google refresh/access token encrypted in `integrations`.
 - Middleware protects everything except `/login` and the cron routes. Implement `requireOwner()`.

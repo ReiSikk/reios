@@ -15,7 +15,12 @@ type Task = {
   reminderAt: string | null;
 };
 
-type DashboardProps = { ownerName: string; tasks: Task[]; hasTaskError: boolean; hasReminderError: boolean };
+type GmailEmail = { id: string; sender: string; subject: string; category: string; receivedAt: string; unread: boolean };
+type GmailInbox =
+  | { status: "connected"; unreadCount: number; emails: GmailEmail[] }
+  | { status: "reconnect" }
+  | { status: "error" };
+type DashboardProps = { ownerName: string; tasks: Task[]; hasTaskError: boolean; hasReminderError: boolean; gmail: GmailInbox };
 
 function dueLabel(date: string | null): string {
   if (!date) return "No due date";
@@ -41,7 +46,19 @@ function dateInput(value: string | null): string {
   return local.toISOString().slice(0, 16);
 }
 
-export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError }: DashboardProps) {
+function relativeTime(value: string): string {
+  const time = new Date(value).getTime();
+  if (Number.isNaN(time)) return "recently";
+  const minutes = Math.max(0, Math.floor((Date.now() - time) / 60_000));
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gmail }: DashboardProps) {
   const [dialogTask, setDialogTask] = useState<Task | null | undefined>(undefined);
   const [reminderTask, setReminderTask] = useState<Task | null>(null);
   const [dialogList, setDialogList] = useState<Task["list"]>("home_admin");
@@ -137,8 +154,17 @@ export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError }: 
 
         <div className="flex flex-col gap-5">
           <section className="dashboard-card inbox-card">
-            <div className="section-heading compact"><h2><Inbox size={19} /> Google Inbox</h2><span className="accent-text">— unread</span></div>
-            <div className="integration-empty">Inbox preview will appear after Gmail is connected.</div>
+            <div className="section-heading compact"><h2><Inbox size={19} /> Google Inbox</h2><span className="accent-text">{gmail.status === "connected" ? `${gmail.unreadCount} unread` : "Inbox"}</span></div>
+            {gmail.status === "connected" && gmail.emails.length > 0 && <div className="email-list">
+              {gmail.emails.map((email) => <a className="email-row" key={email.id} href={`https://mail.google.com/mail/u/0/#all/${encodeURIComponent(email.id)}`} target="_blank" rel="noreferrer">
+                <span className="email-avatar" aria-hidden="true">{email.sender.trim().charAt(0).toUpperCase() || "?"}</span>
+                <span className="email-copy"><b>{email.sender}</b><strong>{email.subject}</strong><small>{email.category} <i>•</i> {relativeTime(email.receivedAt)}</small></span>
+                {email.unread && <span className="unread-badge">Unread</span>}
+              </a>)}
+            </div>}
+            {gmail.status === "connected" && gmail.emails.length === 0 && <div className="integration-empty">No important unread emails right now.</div>}
+            {gmail.status === "reconnect" && <div className="integration-state"><p>Google access expired or was revoked.</p><a className="secondary-pill" href="/login">Reconnect Google</a></div>}
+            {gmail.status === "error" && <div className="integration-empty">Inbox is temporarily unavailable. Please refresh to try again.</div>}
           </section>
           <section className="dashboard-card calendar-card">
             <div className="section-heading compact"><h2><CalendarDays size={19} /> Calendar Preview</h2><span className="accent-text">Next 8 days</span></div>

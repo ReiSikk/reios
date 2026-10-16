@@ -177,6 +177,18 @@
 .empty-note { margin: 18px 0 2px; color: #a5a6ab; font-size: 14px; }
 .inbox-card { padding: 25px 26px; }
 .integration-empty, .calendar-empty { display: grid; min-height: 115px; place-items: center; color: #96989e; font-size: 14px; text-align: center; }
+.email-list { display: flex; flex-direction: column; gap: 5px; }
+.email-row { display: flex; min-width: 0; align-items: center; gap: 13px; border-radius: 9px; padding: 5px 0; color: inherit; text-decoration: none; }
+.email-row:hover .email-copy strong { color: var(--reios-blue); }
+.email-avatar { display: grid; width: 38px; height: 38px; flex: none; place-items: center; border: 1px solid #38393e; border-radius: 50%; background: #242529; color: #e7e7e9; font-weight: 650; }
+.email-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 3px; }
+.email-copy b, .email-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.email-copy b, .email-copy strong { font-size: 14px; font-weight: 650; }
+.email-copy small { color: var(--reios-blue); font-size: 12px; }
+.email-copy small i { padding: 0 2px; font-style: normal; }
+.unread-badge { flex: none; border-radius: 999px; background: #292a2d; padding: 6px 11px; color: var(--reios-blue); font-size: 11px; font-weight: 600; }
+.integration-state { display: flex; min-height: 105px; align-items: center; justify-content: center; flex-direction: column; gap: 12px; text-align: center; }
+.integration-state p { margin: 0; color: #a2a3a8; font-size: 14px; }
 .calendar-card { padding: 25px 26px; }
 .calendar-empty { min-height: 95px; border: 1px dashed #34353a; border-radius: 10px; }
 .dialog-backdrop { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; overflow-y: auto; background: #000000b8; padding: 22px; backdrop-filter: blur(5px); }

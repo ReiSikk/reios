@@ -1,22 +1,36 @@
 import { Suspense } from "react";
 import { requireOwner } from "@/lib/auth";
+import { getSupabaseAdmin } from "@/lib/db";
+import { Dashboard } from "@/components/dashboard";
 
 export default function Home() {
   return (
-    <Suspense fallback={<main className="mx-auto min-h-screen w-full max-w-5xl px-6 py-10">Loading REIOS…</main>}>
-      <Dashboard />
+    <Suspense fallback={<main className="min-h-screen p-8 text-sm text-muted-foreground">Loading REIOS…</main>}>
+      <DashboardData />
     </Suspense>
   );
 }
 
-async function Dashboard() {
+async function DashboardData() {
   const owner = await requireOwner();
+  const supabase = getSupabaseAdmin();
+  const [tasksResult, remindersResult] = await Promise.all([
+    supabase.from("tasks").select("id,list,title,category,due_date,done,created_at").order("created_at", { ascending: true }),
+    supabase.from("reminders").select("task_id,remind_at").is("sent_at", null).order("created_at", { ascending: false }),
+  ]);
+
+  const tasks = tasksResult.error ? [] : tasksResult.data ?? [];
+  const reminders = remindersResult.error ? [] : remindersResult.data ?? [];
+  const reminderByTask = new Map<string, string>();
+  for (const reminder of reminders) {
+    if (!reminderByTask.has(reminder.task_id)) reminderByTask.set(reminder.task_id, reminder.remind_at);
+  }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-3 px-6 py-10">
-      <p className="text-sm font-semibold tracking-[0.2em]">REIOS</p>
-      <h1 className="text-3xl font-semibold">Welcome, {owner.name ?? "Rei"}</h1>
-      <p className="text-muted-foreground">Your private admin dashboard is ready for setup.</p>
-    </main>
+    <Dashboard
+      ownerName={owner.name ?? "Rei"}
+      tasks={tasks.map((task) => ({ ...task, reminderAt: reminderByTask.get(task.id) ?? null }))}
+      hasTaskError={Boolean(tasksResult.error)}
+    />
   );
 }

@@ -15,6 +15,10 @@ const taskSchema = z.object({
 });
 
 const taskIdSchema = z.string().uuid();
+const reminderSchema = z.object({
+  taskId: z.string().uuid(),
+  remindAt: z.string().max(32),
+});
 
 function formValue(formData: FormData, key: string): string {
   const value = formData.get(key);
@@ -98,5 +102,42 @@ export async function deleteTask(taskId: string): Promise<void> {
   const id = taskIdSchema.parse(taskId);
   const { error } = await getSupabaseAdmin().from("tasks").delete().eq("id", id);
   if (error) throw new Error("Could not delete this task.");
+  revalidatePath("/");
+}
+
+export async function setTaskReminder(taskId: string, remindAtValue: string): Promise<void> {
+  await requireOwner();
+  const parsed = reminderSchema.safeParse({ taskId, remindAt: remindAtValue });
+  if (!parsed.success) throw new Error("Please choose a valid reminder time.");
+
+  const { taskId: id, remindAt: value } = parsed.data;
+  const remindAt = value ? new Date(value) : null;
+  if (remindAt && Number.isNaN(remindAt.getTime())) throw new Error("Please choose a valid reminder time.");
+
+  const supabase = getSupabaseAdmin();
+  const { data: task, error: taskError } = await supabase.from("tasks").select("id").eq("id", id).maybeSingle();
+  if (taskError || !task) throw new Error("Could not find this task.");
+
+  const { data: existing, error: readError } = await supabase
+    .from("reminders")
+    .select("id")
+    .eq("task_id", id)
+    .is("sent_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (readError) throw new Error("Could not load this reminder.");
+
+  if (!remindAt) {
+    const { error } = await supabase.from("reminders").delete().eq("task_id", id).is("sent_at", null);
+    if (error) throw new Error("Could not remove this reminder.");
+  } else if (existing) {
+    const { error } = await supabase.from("reminders").update({ remind_at: remindAt.toISOString() }).eq("id", existing.id);
+    if (error) throw new Error("Could not update this reminder.");
+  } else {
+    const { error } = await supabase.from("reminders").insert({ task_id: id, remind_at: remindAt.toISOString() });
+    if (error) throw new Error("Could not create this reminder.");
+  }
+
   revalidatePath("/");
 }

@@ -175,15 +175,6 @@
 .todo-card { padding: 29px 32px 30px; }
 .todo-task-list .task-row { min-height: 74px; border-color: transparent; }
 .empty-note { margin: 18px 0 2px; color: #a5a6ab; font-size: 14px; }
-.stats-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.stat-tile { min-width: 0; border-radius: 10px; background: #202124; padding: 16px; }
-.stat-tile > div { display: flex; align-items: center; gap: 7px; color: var(--reios-blue); font-size: 13px; font-weight: 600; }
-.stat-tile > div span { display: inline-flex; }
-.stat-tile strong { display: block; margin-top: 7px; font-size: clamp(20px, 2vw, 25px); line-height: 1.1; }
-.chart-caption { display: flex; justify-content: space-between; margin: 25px 0 10px; font-size: 14px; }
-.chart-caption span { color: var(--reios-blue); }
-.empty-chart { display: flex; height: 100px; align-items: end; justify-content: space-between; gap: 11px; border-bottom: 1px solid #34353a; padding: 0 2px; }
-.empty-chart i { width: 13%; height: 9px; border-radius: 12px 12px 0 0; background: #25262a; }
 .inbox-card { padding: 25px 26px; }
 .integration-empty, .calendar-empty { display: grid; min-height: 115px; place-items: center; color: #96989e; font-size: 14px; text-align: center; }
 .calendar-card { padding: 25px 26px; }
@@ -194,6 +185,7 @@
 .dialog-eyebrow { margin-bottom: 11px; color: var(--reios-blue); font-size: 12px; font-weight: 700; }
 .task-dialog h2 { margin: 0; font-size: 29px; font-weight: 650; letter-spacing: -0.03em; }
 .dialog-description { margin: 7px 0 27px; color: var(--reios-muted); font-size: 15px; }
+.reminder-help { margin: 9px 0 0; color: var(--reios-muted); font-size: 12px; }
 .field-label { display: block; margin: 18px 0 9px; color: var(--reios-blue); font-size: 13px; font-weight: 600; }
 .text-field { width: 100%; height: 50px; border: 1px solid #38393e; border-radius: 8px; outline: none; background: #101113; padding: 0 14px; color: #f2f2f3; font: inherit; font-size: 14px; }
 .text-field:focus { border-color: var(--reios-blue); box-shadow: 0 0 0 3px #9bd4fa20; }
@@ -221,10 +213,6 @@
   .task-actions { gap: 2px; }
   .task-actions button { width: 29px; height: 29px; }
   .task-actions button svg { width: 15px; }
-  .stats-grid { gap: 7px; }
-  .stat-tile { padding: 12px 9px; }
-  .stat-tile > div { gap: 4px; font-size: 11px; }
-  .stat-tile strong { font-size: 19px; }
   .field-pair { grid-template-columns: 1fr; gap: 0; }
   .dialog-content { padding: 25px 21px 22px; }
   .dialog-footer { padding: 17px 20px 20px; }

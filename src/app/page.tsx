@@ -31,6 +31,7 @@ async function DashboardData() {
       ownerName={owner.name ?? "Rei"}
       tasks={tasks.map((task) => ({ ...task, reminderAt: reminderByTask.get(task.id) ?? null }))}
       hasTaskError={Boolean(tasksResult.error)}
+      hasReminderError={Boolean(remindersResult.error)}
     />
   );
 }

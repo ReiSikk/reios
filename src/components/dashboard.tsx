@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition, type FormEvent, type ReactNode } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, CalendarDays, Check, ChevronDown, Circle, Dumbbell, Inbox, Pencil, Plus, Ruler, Trash2, X } from "lucide-react";
-import { deleteTask, saveTask, toggleTask } from "@/lib/tasks/actions";
+import { Bell, CalendarDays, Check, ChevronDown, Circle, Inbox, Pencil, Plus, Trash2, X } from "lucide-react";
+import { deleteTask, saveTask, setTaskReminder, toggleTask } from "@/lib/tasks/actions";
 
 type Task = {
   id: string;
@@ -15,7 +15,7 @@ type Task = {
   reminderAt: string | null;
 };
 
-type DashboardProps = { ownerName: string; tasks: Task[]; hasTaskError: boolean };
+type DashboardProps = { ownerName: string; tasks: Task[]; hasTaskError: boolean; hasReminderError: boolean };
 
 function dueLabel(date: string | null): string {
   if (!date) return "No due date";
@@ -34,7 +34,6 @@ function dueLabel(date: string | null): string {
   if (target > today && target < new Date(today.getTime() + 7 * 86400000)) return "This week";
   return target.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
-
 function dateInput(value: string | null): string {
   if (!value) return "";
   const date = new Date(value);
@@ -42,8 +41,9 @@ function dateInput(value: string | null): string {
   return local.toISOString().slice(0, 16);
 }
 
-export function Dashboard({ ownerName, tasks, hasTaskError }: DashboardProps) {
+export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError }: DashboardProps) {
   const [dialogTask, setDialogTask] = useState<Task | null | undefined>(undefined);
+  const [reminderTask, setReminderTask] = useState<Task | null>(null);
   const [dialogList, setDialogList] = useState<Task["list"]>("home_admin");
   const [formError, setFormError] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -72,6 +72,23 @@ export function Dashboard({ ownerName, tasks, hasTaskError }: DashboardProps) {
         router.refresh();
       } catch {
         setFormError("Could not save this task. Check the details and try again.");
+      }
+    });
+  }
+
+  async function submitReminder(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!reminderTask) return;
+    const formData = new FormData(event.currentTarget);
+    const remindAt = String(formData.get("remind_at") ?? "");
+    startTransition(async () => {
+      try {
+        await setTaskReminder(reminderTask.id, remindAt);
+        setReminderTask(null);
+        setFormError("");
+        router.refresh();
+      } catch {
+        setFormError("Could not save this reminder. Please try again.");
       }
     });
   }
@@ -110,21 +127,12 @@ export function Dashboard({ ownerName, tasks, hasTaskError }: DashboardProps) {
               <div><h1>Home Admin</h1><p>Personal task orchestration</p></div>
               <button className="primary-pill" onClick={() => openNew("home_admin")}><Plus size={16} /> Add task</button>
             </div>
-            <TaskList tasks={homeTasks} list="home_admin" onEdit={openEdit} onToggle={(id) => runTaskAction(() => toggleTask(id))} onDelete={(id) => runTaskAction(() => deleteTask(id))} onRemind={openEdit} />
+            <TaskList tasks={homeTasks} list="home_admin" onEdit={openEdit} onToggle={(id) => runTaskAction(() => toggleTask(id))} onDelete={(id) => runTaskAction(() => deleteTask(id))} onRemind={setReminderTask} />
             {hasTaskError && <p className="empty-note">Tasks could not be loaded. Please refresh to try again.</p>}
+            {!hasTaskError && hasReminderError && <p className="empty-note">Reminder settings could not be loaded.</p>}
             {!hasTaskError && homeTasks.length === 0 && <p className="empty-note">No home tasks yet. Add one to get started.</p>}
           </section>
 
-          <section className="dashboard-card strava-card">
-            <div className="section-heading compact"><h2><Dumbbell size={19} /> Strava Weekly</h2><span className="accent-text">This week</span></div>
-            <div className="stats-grid">
-              <Stat icon={<Ruler size={14} />} label="Distance" value="—" />
-              <Stat icon={<CalendarDays size={14} />} label="Time" value="—" />
-              <Stat icon={<Dumbbell size={14} />} label="Elevation" value="—" />
-            </div>
-            <div className="chart-caption"><b>Weekly activity</b><span>Strava setup pending</span></div>
-            <div className="empty-chart" aria-label="Weekly activity chart will appear after Strava is connected"><i /><i /><i /><i /><i /><i /><i /></div>
-          </section>
         </div>
 
         <div className="flex flex-col gap-5">
@@ -145,7 +153,7 @@ export function Dashboard({ ownerName, tasks, hasTaskError }: DashboardProps) {
         </div>
       </div>
 
-      {formError && dialogTask === undefined && <div className="dashboard-toast" role="status">{formError}<button onClick={() => setFormError("")} aria-label="Dismiss"><X size={15} /></button></div>}
+      {formError && dialogTask === undefined && !reminderTask && <div className="dashboard-toast" role="status">{formError}<button onClick={() => setFormError("")} aria-label="Dismiss"><X size={15} /></button></div>}
       {dialogTask !== undefined && (
         <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDialogTask(undefined); }}>
           <section className="task-dialog" role="dialog" aria-modal="true" aria-labelledby="task-dialog-title">
@@ -167,6 +175,24 @@ export function Dashboard({ ownerName, tasks, hasTaskError }: DashboardProps) {
                 {formError && <p className="form-error" role="alert">{formError}</p>}
               </div>
               <div className="dialog-footer"><button type="button" className="secondary-pill" onClick={() => setDialogTask(undefined)}>Cancel</button><button type="submit" className="primary-pill" disabled={isPending}>{isPending ? "Saving…" : "Confirm"}</button></div>
+            </form>
+          </section>
+        </div>
+      )}
+      {reminderTask && (
+        <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setReminderTask(null); }}>
+          <section className="task-dialog reminder-dialog" role="dialog" aria-modal="true" aria-labelledby="reminder-dialog-title">
+            <form onSubmit={submitReminder}>
+              <div className="dialog-content">
+                <div className="dialog-eyebrow">REMINDER</div>
+                <h2 id="reminder-dialog-title">Set a reminder</h2>
+                <p className="dialog-description">We&apos;ll email you about “{reminderTask.title}”.</p>
+                <label className="field-label" htmlFor="reminder-at">Remind me at</label>
+                <div className="reminder-input-wrap"><input autoFocus id="reminder-at" name="remind_at" type="datetime-local" className="text-field" defaultValue={dateInput(reminderTask.reminderAt)} /><ChevronDown size={16} /></div>
+                <p className="reminder-help">Leave this blank to remove the pending reminder.</p>
+                {formError && <p className="form-error" role="alert">{formError}</p>}
+              </div>
+              <div className="dialog-footer"><button type="button" className="secondary-pill" onClick={() => setReminderTask(null)}>Cancel</button><button type="submit" className="primary-pill" disabled={isPending}>{isPending ? "Saving…" : "Save reminder"}</button></div>
             </form>
           </section>
         </div>
@@ -198,8 +224,4 @@ function TaskList({ tasks, list, onEdit, onToggle, onDelete, onRemind }: {
       </div>}
     </article>)}
   </div>;
-}
-
-function Stat({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
-  return <div className="stat-tile"><div><span>{icon}</span>{label}</div><strong>{value}</strong></div>;
 }

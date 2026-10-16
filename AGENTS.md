@@ -19,9 +19,8 @@ A private dashboard for one person (the owner). Modules:
 1. **Home Admin**: task list for household and personal admin (categories such as Home maintenance, Household, Safety). Tasks have a due date and optional email reminders.
 2. **To-Do List**: general task list (Errands, Admin, Social, ...). Same data model as Home Admin, separated by a `list` column.
 3. **Google Inbox**: shows the most important emails from the owner's Gmail (read-only).
-4. **Strava Weekly/Monthly/Yearly**: running stats (distance, time, elevation, activity count) and weight training stats (sessions, total duration).
-5. **Calendar Preview**: 8-day preview strip (see design). Source of events is a later decision; in the first version, derive entries from tasks with due dates. Do not integrate Google Calendar unless the owner asks.
-6. **Email reminders**: scheduled emails sent to the owner's own inbox for tasks with reminders.
+4. **Calendar Preview**: 8-day preview strip (see design). Source of events is a later decision; in the first version, derive entries from tasks with due dates. Do not integrate Google Calendar unless the owner asks.
+5. **Email reminders**: scheduled emails sent to the owner's own inbox for tasks with reminders.
 
 Static text (titles, subtitles, labels) lives in code. **No CMS.** Do not build any content-editing UI.
 
@@ -33,7 +32,7 @@ Static text (titles, subtitles, labels) lives in code. **No CMS.** Do not build 
 - **Supabase** used as a hosted **Postgres database only** (not Supabase Auth). Access via `@supabase/supabase-js` on the server.
 - **Resend** for transactional email
 - **zod** for input validation
-- **Scheduled jobs**: a protected route handler triggered by a cron (Vercel Cron by default; see Phase 5)
+- **Scheduled jobs**: a protected route handler triggered by a cron (Vercel Cron by default; see Phase 3)
 - Package manager: **npm**
 - Hosting target: Vercel (unless the owner says otherwise)
 
@@ -50,7 +49,7 @@ The visual design comes from a Figma prototype. **The owner will provide a Figma
 - If the Figma context conflicts with this file about **behavior or architecture**, this file wins. If it conflicts about **visuals**, Figma wins.
 - If something is missing from Figma, ask rather than inventing a new design.
 
-Reference of what the prototype shows (dark theme, rounded cards): header with logo "REIOS" and user pill ("Rei / Admin"); left column: **Home Admin** card (task rows with checkbox, title, category • due label, bell/edit/delete icon buttons, "Add task" button) and **Strava Weekly** card (Distance, Time, Elevation tiles + weekly activity bar chart); right column: **Google Inbox** card (sender • subject, category • time ago, Unread badge, "3 unread"), **Calendar Preview** (Oct 19–26 grid, today highlighted), and **To-Do List** card.
+Reference of what the prototype shows (dark theme, rounded cards): header with logo "REIOS" and user pill ("Rei / Admin"); **Home Admin** and **To-Do List** cards (task rows with checkbox, title, category • due label, reminder/edit/delete icon buttons, "Add task" button); **Google Inbox** card (sender • subject, category • time ago, Unread badge, "3 unread"); and **Calendar Preview** (8-day grid, today highlighted).
 
 ## 4. Architecture rules
 
@@ -59,9 +58,9 @@ Reference of what the prototype shows (dark theme, rounded cards): header with l
 - Enable **Row Level Security on every table with no permissive policies** (deny all for anon/authenticated roles). The server uses the service role, which bypasses RLS. This keeps the DB closed if the anon key ever leaks.
 - Every page, server action and route handler (except the cron route, which uses a secret) must check the session and verify the email equals `OWNER_EMAIL`. Centralize this in one `requireOwner()` helper.
 - Validate all inputs with zod. Never trust client-provided IDs without checking ownership (single user, but keep the habit).
-- Store third-party OAuth tokens (Google refresh token, Strava tokens) **encrypted** (AES-256-GCM, key from `ENCRYPTION_KEY`) in the `integrations` table.
-- Keep integration code isolated: `src/lib/integrations/{gmail,strava}/`. UI components never call external APIs directly.
-- Handle empty, loading and error states for every card (a failed Gmail or Strava call must not break the dashboard).
+- Store the Google OAuth tokens **encrypted** (AES-256-GCM, key from `ENCRYPTION_KEY`) in the `integrations` table.
+- Keep integration code isolated in `src/lib/integrations/gmail/`. UI components never call external APIs directly.
+- Handle empty, loading and error states for every card (a failed Gmail call must not break the dashboard).
 - No `any`. No unused dependencies. Run `npm run lint` and `npm run typecheck` before finishing each phase.
 
 ## 5. Suggested folder structure
@@ -73,11 +72,7 @@ src/
     login/page.tsx
     api/
       auth/[...nextauth]/route.ts
-      strava/connect/route.ts
-      strava/callback/route.ts
-      strava/webhook/route.ts   # optional, Phase 4
       cron/send-reminders/route.ts
-      cron/sync-strava/route.ts
   components/                   # ui/ (shadcn) + feature components
   lib/
     auth.ts                     # Auth.js config + requireOwner()
@@ -85,7 +80,6 @@ src/
     crypto.ts                   # encrypt/decrypt tokens
     email.ts                    # Resend wrapper + templates
     integrations/gmail/
-    integrations/strava/
     tasks/                      # queries + server actions
 supabase/
   migrations/
@@ -99,8 +93,7 @@ Create via SQL migrations in `supabase/migrations/`, never by clicking in the da
 
 - `tasks`: `id uuid pk default gen_random_uuid()`, `list text check (list in ('home_admin','todo'))`, `title text not null`, `category text`, `due_date date`, `done boolean default false`, `completed_at timestamptz`, `created_at timestamptz default now()`, `updated_at timestamptz default now()`
 - `reminders`: `id uuid pk`, `task_id uuid references tasks on delete cascade`, `remind_at timestamptz not null`, `sent_at timestamptz`, `created_at timestamptz default now()`; index on `(sent_at, remind_at)`
-- `integrations`: `provider text pk` (`google`, `strava`), `access_token_enc text`, `refresh_token_enc text`, `expires_at timestamptz`, `scope text`, `athlete_id text`, `updated_at timestamptz`
-- `strava_activities`: `id bigint pk` (Strava activity id), `type text`, `sport_type text`, `name text`, `start_date timestamptz`, `distance_m real`, `moving_time_s int`, `elapsed_time_s int`, `total_elevation_gain_m real`, `average_heartrate real`, `raw jsonb`
+- `integrations`: `provider text pk` (`google`), `access_token_enc text`, `refresh_token_enc text`, `expires_at timestamptz`, `scope text`, `updated_at timestamptz`
 - Optional later: `email_rules` for Gmail importance (VIP senders, keywords).
 
 Enable RLS on all of them.
@@ -118,8 +111,6 @@ NEXT_PUBLIC_SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 RESEND_API_KEY=
 RESEND_FROM_EMAIL=
-STRAVA_CLIENT_ID=
-STRAVA_CLIENT_SECRET=
 ENCRYPTION_KEY=          # 32 bytes, base64
 CRON_SECRET=
 APP_URL=http://localhost:3000
@@ -159,26 +150,17 @@ Complete one phase, run lint + typecheck + manual verification, commit, then sto
 - Configure the cron schedule (`vercel.json`, every 15 minutes, or a daily run if on the Vercel Hobby plan, which limits cron frequency; tell the owner about that limit).
 - **Done when**: a reminder set a few minutes ahead arrives in the owner's inbox exactly once.
 
-### Phase 4: Strava
-- `/api/strava/connect` and `/api/strava/callback`: OAuth with scope `read,activity:read_all`; store tokens encrypted; refresh expired access tokens automatically.
-- Sync job (`/api/cron/sync-strava`, plus an initial backfill) that upserts activities into `strava_activities`. Respect Strava rate limits (100 requests per 15 min, 1000 per day): paginate and cache, never call Strava on page render.
-- Stats via SQL aggregates for **week / month / year**, calendar-based, in the owner's timezone (`Europe/Tallinn`; make it a constant):
-  - Running: distance, moving time, elevation, run count, plus per-day bars for the weekly chart.
-  - Weight training: session count and total duration (`sport_type = 'WeightTraining'`). Strava has no sets/reps/weights; do not fake them.
-- Week/Month/Year toggle on the Strava card.
-- **Done when**: stats match what Strava shows for the same period (within rounding).
-
-### Phase 5: Gmail important emails
+### Phase 4: Gmail important emails
 - `src/lib/integrations/gmail`: fetch via Gmail API (`users.messages.list` with a query, then `messages.get` with `format=metadata` for From, Subject, Date, labels). Never fetch full bodies unless asked.
 - Default importance query: `is:unread (is:important OR category:primary) newer_than:7d`. Keep the query and any VIP sender/keyword rules in one config file so the owner can edit it in code.
 - Show sender, subject, category label, relative time, unread badge and total unread count. Clicking opens the message in Gmail in a new tab.
 - Cache results briefly (e.g. 2-5 minutes) to avoid hammering the API. The integration is **read-only**: no sending, deleting or modifying mail.
 - **Done when**: the card shows real important emails and degrades gracefully if the token is revoked (show a "Reconnect Google" button).
 
-### Phase 6: Calendar preview, polish, deploy
+### Phase 5: Calendar preview, polish, deploy
 - Calendar Preview: 8-day strip from today, today highlighted, entries from tasks due that day.
 - Responsive layout (mobile first check), accessible labels on icon buttons, keyboard focus states.
-- Write `README.md`: setup, env vars, Google Cloud / Strava / Supabase / Resend setup, deploy steps.
+- Write `README.md`: setup, env vars, Google Cloud / Supabase / Resend setup, deploy steps.
 - Deploy to Vercel, set env vars, set cron, test production end to end.
 - **Done when**: the app is live, secured, and all modules work in production.
 

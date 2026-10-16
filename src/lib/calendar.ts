@@ -47,12 +47,6 @@ export function buildCalendarPreview(tasks: DueTask[], events: CalendarEvent[] =
   const today = dateInOwnerZone(now);
   const todayKey = dateKey(today.year, today.month, today.day);
   const dueTasks = new Map<string, CalendarItem[]>();
-  for (const task of tasks) {
-    if (!task.due_date) continue;
-    const dayTasks = dueTasks.get(task.due_date) ?? [];
-    dayTasks.push({ id: `task-${task.id}`, title: task.title, done: task.done });
-    dueTasks.set(task.due_date, dayTasks);
-  }
   for (const event of events) {
     const eventParts = event.startsAt.length === 10 ? null : dateInOwnerZone(new Date(event.startsAt));
     const eventDate = eventParts
@@ -61,6 +55,12 @@ export function buildCalendarPreview(tasks: DueTask[], events: CalendarEvent[] =
     const dayItems = dueTasks.get(eventDate) ?? [];
     dayItems.push({ id: `event-${event.id}`, title: event.title, startsAt: event.startsAt, link: event.link });
     dueTasks.set(eventDate, dayItems);
+  }
+  for (const task of tasks) {
+    if (!task.due_date) continue;
+    const dayItems = dueTasks.get(task.due_date) ?? [];
+    dayItems.push({ id: `task-${task.id}`, title: task.title, done: task.done });
+    dueTasks.set(task.due_date, dayItems);
   }
 
   const days = Array.from({ length: 8 }, (_, offset) => {

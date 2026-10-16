@@ -41,6 +41,10 @@ Static text (titles, subtitles, labels) lives in code. **No CMS.** Do not build 
 
 The visual design comes from a Figma prototype. **The owner will provide a Figma MCP link/context. Do not start UI work (Phase 2 onward) until you have it.** When you have it:
 
+- Figma MCP server configured in Codex: `https://mcp.figma.com/mcp` (server name: `figma`).
+- Design source for Phase 2: [Nils Veeb, frame 33-268](https://www.figma.com/design/u6d969g9PgpaYEVhilWcCF/Nils-Veeb?node-id=33-268&t=kmXI9cPKPYERj4XX-1).
+- Before building Phase 2 screens, read this frame through the `figma` MCP and tell Codex to use it as the visual design source.
+
 - Read the Figma frames through the MCP before building each screen. Match layout, spacing, typography, colors and states.
 - Extract design tokens (colors, radii, font sizes) into Tailwind theme/CSS variables once, then reuse them.
 - If the Figma context conflicts with this file about **behavior or architecture**, this file wins. If it conflicts about **visuals**, Figma wins.

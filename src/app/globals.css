@@ -154,11 +154,13 @@
 .section-heading.compact h2 { font-size: 19px; }
 .section-heading.compact > .accent-text { color: var(--reios-blue); font-size: 14px; font-weight: 600; white-space: nowrap; }
 .primary-pill, .secondary-pill { display: inline-flex; height: 40px; align-items: center; justify-content: center; gap: 7px; padding: 0 17px; border-radius: 999px; border: 1px solid transparent; font-size: 14px; font-weight: 650; cursor: pointer; transition: filter .15s, transform .15s; }
-.primary-pill:focus-visible, .secondary-pill:focus-visible, .task-actions button:focus-visible, .check-button:focus-visible, .task-copy:focus-visible, .email-row:focus-visible { outline: 2px solid var(--reios-blue); outline-offset: 3px; }
+.primary-pill:focus-visible, .secondary-pill:focus-visible, .danger-pill:focus-visible, .task-actions button:focus-visible, .check-button:focus-visible, .task-copy:focus-visible, .email-row:focus-visible { outline: 2px solid var(--reios-blue); outline-offset: 3px; }
 .primary-pill { background: var(--reios-blue); color: #101317; }
 .secondary-pill { border-color: #35363b; background: #202124; color: #eeeeef; }
+.danger-pill { display: inline-flex; height: 40px; align-items: center; justify-content: center; border: 1px solid #773c42; border-radius: 999px; background: #612a30; padding: 0 17px; color: #fff0f0; font-size: 14px; font-weight: 650; cursor: pointer; transition: filter .15s, transform .15s; }
 .primary-pill:hover, .secondary-pill:hover { filter: brightness(1.08); }
-.primary-pill:disabled { opacity: .65; cursor: wait; }
+.danger-pill:hover { filter: brightness(1.12); }
+.primary-pill:disabled, .secondary-pill:disabled, .danger-pill:disabled { opacity: .65; cursor: wait; }
 .task-list { display: flex; flex-direction: column; gap: 12px; }
 .task-row { display: flex; min-width: 0; min-height: 75px; align-items: center; gap: 13px; padding: 12px 14px; border: 1px solid #303135; border-radius: 10px; background: #202124; }
 .task-row.is-done .task-copy b { color: #d9d9dc; }
@@ -175,6 +177,8 @@
 .task-actions button.has-reminder { background: #3a454c; }
 .todo-card { padding: 29px 32px 30px; }
 .todo-task-list .task-row { min-height: 74px; border-color: transparent; }
+.todo-task-list .task-actions { gap: 8px; margin-left: 4px; }
+.todo-task-list .task-actions button { width: 38px; height: 38px; }
 .empty-note { margin: 18px 0 2px; color: #a5a6ab; font-size: 14px; }
 .inbox-card { padding: 25px 26px; }
 .integration-empty, .calendar-empty { display: grid; min-height: 115px; place-items: center; color: #96989e; font-size: 14px; text-align: center; }
@@ -203,8 +207,11 @@
 .calendar-empty { min-height: 95px; border: 1px dashed #34353a; border-radius: 10px; }
 .calendar-status { margin: -10px 0 14px; color: #a8abb2; font-size: 12px; }
 .calendar-status a { color: var(--reios-blue); text-decoration: underline; text-underline-offset: 3px; }
-.dialog-backdrop { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; overflow-y: auto; background: #000000b8; padding: 22px; backdrop-filter: blur(5px); }
-.task-dialog { width: min(100%, 600px); overflow: hidden; border: 1px solid #37383d; border-radius: 17px; background: linear-gradient(145deg, #18191d, #141518); box-shadow: 0 24px 100px #000a; }
+.dialog-backdrop { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; overflow-y: auto; background: #000000b8; padding: 22px; backdrop-filter: blur(5px); animation: modal-backdrop-in 180ms ease-out both; }
+.task-dialog { width: min(100%, 600px); overflow: hidden; border: 1px solid #37383d; border-radius: 17px; background: linear-gradient(145deg, #18191d, #141518); box-shadow: 0 24px 100px #000a; animation: modal-dialog-in 240ms cubic-bezier(.2,.8,.2,1) both; }
+.confirmation-dialog { width: min(100%, 480px); }
+@keyframes modal-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modal-dialog-in { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
 .dialog-content { padding: 31px 33px 25px; }
 .dialog-eyebrow { margin-bottom: 11px; color: var(--reios-blue); font-size: 12px; font-weight: 700; }
 .task-dialog h2 { margin: 0; font-size: 29px; font-weight: 650; letter-spacing: -0.03em; }
@@ -237,8 +244,16 @@
   .task-actions { gap: 2px; }
   .task-actions button { width: 29px; height: 29px; }
   .task-actions button svg { width: 15px; }
+  .todo-task-list .task-row { gap: 8px; padding: 9px 8px; }
+  .todo-task-list .check-button { width: 40px; height: 44px; }
+  .todo-task-list .task-actions { gap: 10px; margin-left: 2px; }
+  .todo-task-list .task-actions button { width: 44px; height: 44px; }
+  .todo-task-list .task-actions button svg { width: 18px; }
   .field-pair { grid-template-columns: 1fr; gap: 0; }
   .calendar-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .dialog-content { padding: 25px 21px 22px; }
   .dialog-footer { padding: 17px 20px 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dialog-backdrop, .task-dialog { animation: none; }
 }

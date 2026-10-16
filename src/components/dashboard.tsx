@@ -75,6 +75,8 @@ function relativeTime(value: string): string {
 export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gmail, googleCalendar, calendarDays, calendarRange }: DashboardProps) {
   const [dialogTask, setDialogTask] = useState<Task | null | undefined>(undefined);
   const [reminderTask, setReminderTask] = useState<Task | null>(null);
+  const [deleteTaskTarget, setDeleteTaskTarget] = useState<Task | null>(null);
+  const [deleteError, setDeleteError] = useState("");
   const [dialogList, setDialogList] = useState<Task["list"]>("home_admin");
   const [formError, setFormError] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -135,6 +137,20 @@ export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gm
     });
   }
 
+  function confirmDeleteTask() {
+    if (!deleteTaskTarget) return;
+    startTransition(async () => {
+      try {
+        await deleteTask(deleteTaskTarget.id);
+        setDeleteTaskTarget(null);
+        setDeleteError("");
+        router.refresh();
+      } catch {
+        setDeleteError("Could not delete this task. Please try again.");
+      }
+    });
+  }
+
   const homeTasks = tasks.filter((task) => task.list === "home_admin");
   const todoTasks = tasks.filter((task) => task.list === "todo");
 
@@ -158,7 +174,7 @@ export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gm
               <div><h1>Home Admin</h1><p>Personal task orchestration</p></div>
               <button className="primary-pill" onClick={() => openNew("home_admin")}><Plus size={16} /> Add task</button>
             </div>
-            <TaskList tasks={homeTasks} list="home_admin" onEdit={openEdit} onToggle={(id) => runTaskAction(() => toggleTask(id))} onDelete={(id) => runTaskAction(() => deleteTask(id))} onRemind={setReminderTask} />
+            <TaskList tasks={homeTasks} list="home_admin" onEdit={openEdit} onToggle={(id) => runTaskAction(() => toggleTask(id))} onDelete={(task) => { setDeleteTaskTarget(task); setDeleteError(""); }} onRemind={setReminderTask} />
             {hasTaskError && <p className="empty-note">Tasks could not be loaded. Please refresh to try again.</p>}
             {!hasTaskError && hasReminderError && <p className="empty-note">Reminder settings could not be loaded.</p>}
             {!hasTaskError && homeTasks.length === 0 && <p className="empty-note">No home tasks yet. Add one to get started.</p>}
@@ -199,7 +215,7 @@ export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gm
           </section>
           <section className="dashboard-card todo-card">
             <div className="section-heading compact"><h2>To-Do List</h2><button className="primary-pill" onClick={() => openNew("todo")}><Plus size={16} /> Add task</button></div>
-            <TaskList tasks={todoTasks} list="todo" onEdit={openEdit} onToggle={(id) => runTaskAction(() => toggleTask(id))} onDelete={(id) => runTaskAction(() => deleteTask(id))} onRemind={openEdit} />
+            <TaskList tasks={todoTasks} list="todo" onEdit={openEdit} onToggle={(id) => runTaskAction(() => toggleTask(id))} onDelete={(task) => { setDeleteTaskTarget(task); setDeleteError(""); }} onRemind={openEdit} />
             {!hasTaskError && todoTasks.length === 0 && <p className="empty-note">No to-dos yet. Add one to get started.</p>}
             {hasTaskError && <p className="empty-note">Tasks could not be loaded. Please refresh to try again.</p>}
           </section>
@@ -250,8 +266,38 @@ export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gm
           </section>
         </div>
       )}
+      {deleteTaskTarget && <ConfirmationDialog
+        task={deleteTaskTarget}
+        error={deleteError}
+        isPending={isPending}
+        onCancel={() => { setDeleteTaskTarget(null); setDeleteError(""); }}
+        onConfirm={confirmDeleteTask}
+      />}
     </main>
   );
+}
+
+function ConfirmationDialog({ task, error, isPending, onCancel, onConfirm }: {
+  task: Task;
+  error: string;
+  isPending: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !isPending) onCancel(); }}>
+    <section className="task-dialog confirmation-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-dialog-title" aria-describedby="delete-dialog-description">
+      <div className="dialog-content">
+        <div className="dialog-eyebrow">{task.list === "todo" ? "TO-DO LIST" : "HOME ADMIN"}</div>
+        <h2 id="delete-dialog-title">Delete task?</h2>
+        <p id="delete-dialog-description" className="dialog-description">“{task.title}” will be permanently deleted.</p>
+        {error && <p className="form-error" role="alert">{error}</p>}
+      </div>
+      <div className="dialog-footer">
+        <button type="button" className="secondary-pill" onClick={onCancel} disabled={isPending}>Cancel</button>
+        <button type="button" className="danger-pill" onClick={onConfirm} disabled={isPending}>{isPending ? "Deleting…" : "Delete task"}</button>
+      </div>
+    </section>
+  </div>;
 }
 
 function TaskList({ tasks, list, onEdit, onToggle, onDelete, onRemind }: {
@@ -259,7 +305,7 @@ function TaskList({ tasks, list, onEdit, onToggle, onDelete, onRemind }: {
   list: Task["list"];
   onEdit: (task: Task) => void;
   onToggle: (id: string) => void;
-  onDelete: (id: string) => void;
+  onDelete: (task: Task) => void;
   onRemind: (task: Task) => void;
 }) {
   return <div className={`task-list ${list === "todo" ? "todo-task-list" : ""}`}>
@@ -270,11 +316,11 @@ function TaskList({ tasks, list, onEdit, onToggle, onDelete, onRemind }: {
       <button className="task-copy" onClick={() => onEdit(task)} aria-label={`Edit ${task.title}`}>
         <b>{task.title}</b><span>{task.category || "Uncategorized"} <i>•</i> {dueLabel(task.due_date)}</span>
       </button>
-      {list === "home_admin" && <div className="task-actions">
-        <button onClick={() => onRemind(task)} className={task.reminderAt ? "has-reminder" : ""} aria-label={`Set reminder for ${task.title}`}><Bell size={17} /></button>
-        <button onClick={() => onEdit(task)} aria-label={`Edit ${task.title}`}><Pencil size={17} /></button>
-        <button onClick={() => onDelete(task.id)} aria-label={`Delete ${task.title}`}><Trash2 size={17} /></button>
-      </div>}
+      <div className="task-actions">
+        {list === "home_admin" && <button type="button" onClick={() => onRemind(task)} className={task.reminderAt ? "has-reminder" : ""} aria-label={`Set reminder for ${task.title}`}><Bell size={17} /></button>}
+        <button type="button" onClick={() => onEdit(task)} aria-label={`Edit ${task.title}`}><Pencil size={17} /></button>
+        <button type="button" onClick={() => onDelete(task)} aria-label={`Delete ${task.title}`}><Trash2 size={17} /></button>
+      </div>
     </article>)}
   </div>;
 }

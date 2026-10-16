@@ -19,7 +19,7 @@ A private dashboard for one person (the owner). Modules:
 1. **Home Admin**: task list for household and personal admin (categories such as Home maintenance, Household, Safety). Tasks have a due date and optional email reminders.
 2. **To-Do List**: general task list (Errands, Admin, Social, ...). Same data model as Home Admin, separated by a `list` column.
 3. **Google Inbox**: shows the most important emails from the owner's Gmail (read-only).
-4. **Calendar Preview**: 8-day preview strip (see design). Source of events is a later decision; in the first version, derive entries from tasks with due dates. Do not integrate Google Calendar unless the owner asks.
+4. **Calendar Preview**: 8-day preview strip (see design). Show read-only events from the owner's primary Google Calendar plus task due dates.
 5. **Email reminders**: scheduled emails sent to the owner's own inbox for tasks with reminders.
 
 Static text (titles, subtitles, labels) lives in code. **No CMS.** Do not build any content-editing UI.
@@ -59,7 +59,7 @@ Reference of what the prototype shows (dark theme, rounded cards): header with l
 - Every page, server action and route handler (except the cron route, which uses a secret) must check the session and verify the email equals `OWNER_EMAIL`. Centralize this in one `requireOwner()` helper.
 - Validate all inputs with zod. Never trust client-provided IDs without checking ownership (single user, but keep the habit).
 - Store the Google OAuth tokens **encrypted** (AES-256-GCM, key from `ENCRYPTION_KEY`) in the `integrations` table.
-- Keep integration code isolated in `src/lib/integrations/gmail/`. UI components never call external APIs directly.
+- Keep integration code isolated in `src/lib/integrations/{gmail,calendar}/`. UI components never call external APIs directly.
 - Handle empty, loading and error states for every card (a failed Gmail call must not break the dashboard).
 - No `any`. No unused dependencies. Run `npm run lint` and `npm run typecheck` before finishing each phase.
 
@@ -80,6 +80,7 @@ src/
     crypto.ts                   # encrypt/decrypt tokens
     email.ts                    # Resend wrapper + templates
     integrations/gmail/
+    integrations/calendar/
     tasks/                      # queries + server actions
 supabase/
   migrations/
@@ -129,7 +130,7 @@ Complete one phase, run lint + typecheck + manual verification, commit, then sto
 - **Done when**: app runs, migration applies to the Supabase project, `npm run build` passes.
 
 ### Phase 1: Authentication
-- Auth.js with Google provider, `access_type=offline`, `prompt=consent`, scopes `openid email profile https://www.googleapis.com/auth/gmail.readonly`.
+- Auth.js with Google provider, `access_type=offline`, `prompt=consent`, scopes `openid email profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.events.readonly`.
 - `signIn` callback rejects any email that is not `OWNER_EMAIL`.
 - On sign-in, store the Google refresh/access token encrypted in `integrations`.
 - Middleware protects everything except `/login` and the cron routes. Implement `requireOwner()`.
@@ -152,13 +153,14 @@ Complete one phase, run lint + typecheck + manual verification, commit, then sto
 
 ### Phase 4: Gmail important emails
 - `src/lib/integrations/gmail`: fetch via Gmail API (`users.messages.list` with a query, then `messages.get` with `format=metadata` for From, Subject, Date, labels). Never fetch full bodies unless asked.
+- `src/lib/integrations/calendar`: read events from the owner's primary Google Calendar using the read-only Calendar scope.
 - Default importance query: `is:unread (is:important OR category:primary) newer_than:7d`. Keep the query and any VIP sender/keyword rules in one config file so the owner can edit it in code.
 - Show sender, subject, category label, relative time, unread badge and total unread count. Clicking opens the message in Gmail in a new tab.
 - Cache results briefly (e.g. 2-5 minutes) to avoid hammering the API. The integration is **read-only**: no sending, deleting or modifying mail.
 - **Done when**: the card shows real important emails and degrades gracefully if the token is revoked (show a "Reconnect Google" button).
 
 ### Phase 5: Calendar preview, polish, deploy
-- Calendar Preview: 8-day strip from today, today highlighted, entries from tasks due that day.
+- Calendar Preview: 8-day strip from today, today highlighted, entries from primary Google Calendar events and tasks due that day.
 - Responsive layout (mobile first check), accessible labels on icon buttons, keyboard focus states.
 - Write `README.md`: setup, env vars, Google Cloud / Supabase / Resend setup, deploy steps.
 - Deploy to Vercel, set env vars, set cron, test production end to end.

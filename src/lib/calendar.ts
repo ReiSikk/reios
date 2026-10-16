@@ -1,15 +1,16 @@
 export const OWNER_TIME_ZONE = "Europe/Tallinn";
 
-export type CalendarTask = { id: string; title: string; done: boolean };
+export type CalendarItem = { id: string; title: string; done?: boolean; startsAt?: string; link?: string | null };
 export type CalendarDay = {
   date: string;
   dayName: string;
   dayNumber: string;
   isToday: boolean;
-  tasks: CalendarTask[];
+  tasks: CalendarItem[];
 };
 
 type DueTask = { id: string; title: string; due_date: string | null; done: boolean };
+type CalendarEvent = { id: string; title: string; startsAt: string; link: string | null };
 
 function dateInOwnerZone(value: Date): { year: number; month: number; day: number } {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -42,15 +43,24 @@ function rangeLabel(firstDate: string, lastDate: string): string {
     : `${firstMonth} ${firstDay}–${lastMonth} ${lastDay}, ${year}`;
 }
 
-export function buildCalendarPreview(tasks: DueTask[], now = new Date()): { days: CalendarDay[]; range: string } {
+export function buildCalendarPreview(tasks: DueTask[], events: CalendarEvent[] = [], now = new Date()): { days: CalendarDay[]; range: string } {
   const today = dateInOwnerZone(now);
   const todayKey = dateKey(today.year, today.month, today.day);
-  const dueTasks = new Map<string, CalendarTask[]>();
+  const dueTasks = new Map<string, CalendarItem[]>();
   for (const task of tasks) {
     if (!task.due_date) continue;
     const dayTasks = dueTasks.get(task.due_date) ?? [];
-    dayTasks.push({ id: task.id, title: task.title, done: task.done });
+    dayTasks.push({ id: `task-${task.id}`, title: task.title, done: task.done });
     dueTasks.set(task.due_date, dayTasks);
+  }
+  for (const event of events) {
+    const eventParts = event.startsAt.length === 10 ? null : dateInOwnerZone(new Date(event.startsAt));
+    const eventDate = eventParts
+      ? dateKey(eventParts.year, eventParts.month, eventParts.day)
+      : event.startsAt;
+    const dayItems = dueTasks.get(eventDate) ?? [];
+    dayItems.push({ id: `event-${event.id}`, title: event.title, startsAt: event.startsAt, link: event.link });
+    dueTasks.set(eventDate, dayItems);
   }
 
   const days = Array.from({ length: 8 }, (_, offset) => {

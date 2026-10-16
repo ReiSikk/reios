@@ -20,13 +20,18 @@ type GmailInbox =
   | { status: "connected"; unreadCount: number; emails: GmailEmail[] }
   | { status: "reconnect" }
   | { status: "error" };
-type CalendarPreviewDay = { date: string; dayName: string; dayNumber: string; isToday: boolean; tasks: { id: string; title: string; done: boolean }[] };
+type GoogleCalendar =
+  | { status: "connected"; events: { id: string; title: string; startsAt: string; link: string | null }[] }
+  | { status: "reconnect" }
+  | { status: "error" };
+type CalendarPreviewDay = { date: string; dayName: string; dayNumber: string; isToday: boolean; tasks: { id: string; title: string; done?: boolean; startsAt?: string; link?: string | null }[] };
 type DashboardProps = {
   ownerName: string;
   tasks: Task[];
   hasTaskError: boolean;
   hasReminderError: boolean;
   gmail: GmailInbox;
+  googleCalendar: GoogleCalendar;
   calendarDays: CalendarPreviewDay[];
   calendarRange: string;
 };
@@ -67,7 +72,7 @@ function relativeTime(value: string): string {
   return `${days}d ago`;
 }
 
-export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gmail, calendarDays, calendarRange }: DashboardProps) {
+export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gmail, googleCalendar, calendarDays, calendarRange }: DashboardProps) {
   const [dialogTask, setDialogTask] = useState<Task | null | undefined>(undefined);
   const [reminderTask, setReminderTask] = useState<Task | null>(null);
   const [dialogList, setDialogList] = useState<Task["list"]>("home_admin");
@@ -177,12 +182,16 @@ export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gm
           </section>
           <section className="dashboard-card calendar-card">
             <div className="section-heading compact"><h2><CalendarDays size={19} /> Calendar Preview</h2><span className="accent-text">{calendarRange}</span></div>
+            {googleCalendar.status === "reconnect" && <p className="calendar-status">Connect Google Calendar to see events. <a href="/login">Reconnect Google</a></p>}
+            {googleCalendar.status === "error" && <p className="calendar-status">Google Calendar is temporarily unavailable. Showing task due dates.</p>}
             {hasTaskError ? <div className="calendar-empty">Calendar tasks could not be loaded.</div> : <div className="calendar-grid" aria-label="Next eight days">
               {calendarDays.map((day) => <article className={`calendar-day ${day.isToday ? "is-today" : ""}`} key={day.date} aria-label={`${day.dayName}, ${day.date}${day.isToday ? ", today" : ""}`}>
                 <span className="calendar-weekday">{day.dayName}</span>
                 <strong>{day.dayNumber}</strong>
                 {day.tasks.length > 0 ? <ul>
-                  {day.tasks.slice(0, 2).map((task) => <li className={task.done ? "is-done" : ""} key={task.id}>{task.title}</li>)}
+                  {day.tasks.slice(0, 2).map((task) => <li className={task.done ? "is-done" : ""} key={task.id}>
+                    {task.link ? <a href={task.link} target="_blank" rel="noreferrer">{task.startsAt && task.startsAt.length > 10 ? `${new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Tallinn", hour: "2-digit", minute: "2-digit" }).format(new Date(task.startsAt))} ` : ""}{task.title}</a> : task.title}
+                  </li>)}
                   {day.tasks.length > 2 && <li className="calendar-more">+{day.tasks.length - 2} more</li>}
                 </ul> : <span className="calendar-none">No tasks</span>}
               </article>)}

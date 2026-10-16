@@ -7,7 +7,7 @@ REIOS is a private personal admin dashboard for one owner. It includes Home Admi
 - Node.js supported by the installed Next.js release
 - npm
 - A Supabase project with Postgres
-- A Google OAuth client with the Gmail API enabled
+- A Google OAuth client with the Gmail and Google Calendar APIs enabled
 - A Resend account and verified sender address
 - A Vercel project; the configured reminder job runs once per day for compatibility with Hobby
 
@@ -44,7 +44,7 @@ Use the project URL and service role key as server configuration. All tables are
 
 ### Google Cloud
 
-Create an OAuth client for the application, enable the Gmail API, and add the Auth.js callback URL:
+Create an OAuth client for the application, enable the Gmail and Google Calendar APIs, and add the Auth.js callback URL:
 
 `https://YOUR_APP_URL/api/auth/callback/google`
 
@@ -52,7 +52,7 @@ For local development, also add:
 
 `http://localhost:3000/api/auth/callback/google`
 
-The application requests `openid`, `email`, `profile`, and `https://www.googleapis.com/auth/gmail.readonly`. Set `OWNER_EMAIL` to the account that should be allowed through the sign-in callback. Google access and refresh tokens are encrypted before storage. The Gmail integration reads message metadata only; it does not read message bodies or modify mail.
+The application requests `openid`, `email`, `profile`, `https://www.googleapis.com/auth/gmail.readonly`, and `https://www.googleapis.com/auth/calendar.events.readonly`. Enable both the Gmail API and Google Calendar API in Google Cloud, and include the Gmail and Calendar read-only scopes in the OAuth consent screen's Data Access configuration. Set `OWNER_EMAIL` to the account that should be allowed through the sign-in callback. Google access and refresh tokens are encrypted before storage. Gmail reads message metadata only; Calendar reads events from the primary calendar. Neither integration modifies Google data.
 
 ### Resend
 
@@ -72,6 +72,6 @@ npm run build
 2. Add every required environment variable from `.env.example` to the Production environment.
 3. The committed schedule runs daily at 06:00 UTC, which is 08:00 or 09:00 in Tallinn depending on daylight saving time. Vercel Hobby supports one execution per cron job per day, with up to an hour of scheduling variance. Because reminders are checked once per day, delivery may be delayed by almost 24 hours.
 4. Deploy and confirm that the cron is listed under the project's Cron Jobs settings.
-5. Sign in with the owner account, add a reminder a few minutes ahead, and verify it arrives once. Confirm that Gmail shows metadata, and that the calendar displays task due dates in the next eight days.
+5. Sign in with the owner account, add a reminder a few minutes ahead, and verify it arrives once. Confirm that Gmail shows metadata, and that the calendar displays primary-calendar events and task due dates in the next eight days.
 
 The cron endpoint expects `Authorization: Bearer ${CRON_SECRET}`. Vercel supplies this header to cron requests when `CRON_SECRET` is configured for the deployment.

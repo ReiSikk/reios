@@ -201,6 +201,8 @@
 .calendar-day li.is-done { color: #999ba0; text-decoration: line-through; }
 .calendar-day li.calendar-more, .calendar-none { display: block; margin-top: 8px; color: #85878d; font-size: 11px; }
 .calendar-empty { min-height: 95px; border: 1px dashed #34353a; border-radius: 10px; }
+.calendar-status { margin: -10px 0 14px; color: #a8abb2; font-size: 12px; }
+.calendar-status a { color: var(--reios-blue); text-decoration: underline; text-underline-offset: 3px; }
 .dialog-backdrop { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; overflow-y: auto; background: #000000b8; padding: 22px; backdrop-filter: blur(5px); }
 .task-dialog { width: min(100%, 600px); overflow: hidden; border: 1px solid #37383d; border-radius: 17px; background: linear-gradient(145deg, #18191d, #141518); box-shadow: 0 24px 100px #000a; }
 .dialog-content { padding: 31px 33px 25px; }

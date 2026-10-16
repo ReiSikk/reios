@@ -9,7 +9,7 @@ REIOS is a private personal admin dashboard for one owner. It includes Home Admi
 - A Supabase project with Postgres
 - A Google OAuth client with the Gmail API enabled
 - A Resend account and verified sender address
-- A Vercel Pro project for the configured 15-minute reminder schedule; Vercel Hobby supports one cron run per day, so use a daily schedule there instead
+- A Vercel project; the configured reminder job runs once per day for compatibility with Hobby
 
 ## Local setup
 
@@ -70,7 +70,7 @@ npm run build
 
 1. Import the repository into Vercel.
 2. Add every required environment variable from `.env.example` to the Production environment.
-3. Use a Vercel Pro plan for the committed `*/15 * * * *` reminder schedule. Hobby projects can run a cron only once per day, with up to an hour of scheduling variance; for Hobby, change `vercel.json` to a daily schedule and expect reminders to be delayed until that run.
+3. The committed schedule runs daily at 06:00 UTC, which is 08:00 or 09:00 in Tallinn depending on daylight saving time. Vercel Hobby supports one execution per cron job per day, with up to an hour of scheduling variance. Because reminders are checked once per day, delivery may be delayed by almost 24 hours.
 4. Deploy and confirm that the cron is listed under the project's Cron Jobs settings.
 5. Sign in with the owner account, add a reminder a few minutes ahead, and verify it arrives once. Confirm that Gmail shows metadata, and that the calendar displays task due dates in the next eight days.
 

@@ -147,7 +147,7 @@ Complete one phase, run lint + typecheck + manual verification, commit, then sto
 - Bell icon opens a reminder picker; creates/updates/deletes rows in `reminders`.
 - `GET /api/cron/send-reminders`: verifies `Authorization: Bearer ${CRON_SECRET}`; selects reminders with `remind_at <= now()` and `sent_at is null` for tasks that are not done; sends one email per reminder via Resend to `OWNER_EMAIL`; sets `sent_at` only after a successful send; is idempotent (safe to run twice).
 - Email template: plain, minimal HTML with task title, category, due date and a link to the app.
-- Configure the cron schedule (`vercel.json`, every 15 minutes, or a daily run if on the Vercel Hobby plan, which limits cron frequency; tell the owner about that limit).
+- Configure the cron schedule in `vercel.json` to run once daily at `0 6 * * *` UTC for Vercel Hobby compatibility. Hobby cron timing can vary by up to an hour; tell the owner that a reminder can be delivered nearly 24 hours after its selected time.
 - **Done when**: a reminder set a few minutes ahead arrives in the owner's inbox exactly once.
 
 ### Phase 4: Gmail important emails

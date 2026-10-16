@@ -233,7 +233,7 @@ export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gm
                 <p className="dialog-description">We&apos;ll email you about “{reminderTask.title}”.</p>
                 <label className="field-label" htmlFor="reminder-at">Remind me at</label>
                 <div className="reminder-input-wrap"><input autoFocus id="reminder-at" name="remind_at" type="datetime-local" className="text-field" defaultValue={dateInput(reminderTask.reminderAt)} /><ChevronDown size={16} /></div>
-                <p className="reminder-help">Leave this blank to remove the pending reminder.</p>
+                <p className="reminder-help">Reminders are checked once a day and may arrive up to 24 hours late. Leave blank to remove the pending reminder.</p>
                 {formError && <p className="form-error" role="alert">{formError}</p>}
               </div>
               <div className="dialog-footer"><button type="button" className="secondary-pill" onClick={() => setReminderTask(null)}>Cancel</button><button type="submit" className="primary-pill" disabled={isPending}>{isPending ? "Saving…" : "Save reminder"}</button></div>

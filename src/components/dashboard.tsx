@@ -172,7 +172,7 @@ export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gm
           <section className="dashboard-card task-card">
             <div className="section-heading">
               <div><h1>Home Admin</h1><p>Personal task orchestration</p></div>
-              <button className="primary-pill" onClick={() => openNew("home_admin")}><Plus size={16} /> Add task</button>
+              <button className="btn-primary" onClick={() => openNew("home_admin")}><Plus size={16} /> Add task</button>
             </div>
             <TaskList tasks={homeTasks} list="home_admin" onEdit={openEdit} onToggle={(id) => runTaskAction(() => toggleTask(id))} onDelete={(task) => { setDeleteTaskTarget(task); setDeleteError(""); }} onRemind={setReminderTask} />
             {hasTaskError && <p className="empty-note">Tasks could not be loaded. Please refresh to try again.</p>}
@@ -193,7 +193,7 @@ export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gm
               </a>)}
             </div>}
             {gmail.status === "connected" && gmail.emails.length === 0 && <div className="integration-empty">No important unread emails right now.</div>}
-            {gmail.status === "reconnect" && <div className="integration-state"><p>Google access expired or was revoked.</p><a className="secondary-pill" href="/login">Reconnect Google</a></div>}
+            {gmail.status === "reconnect" && <div className="integration-state"><p>Google access expired or was revoked.</p><a className="btn-secondary" href="/login">Reconnect Google</a></div>}
             {gmail.status === "error" && <div className="integration-empty">Inbox is temporarily unavailable. Please refresh to try again.</div>}
           </section>
           <section className="dashboard-card calendar-card">
@@ -214,7 +214,7 @@ export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gm
             </div>}
           </section>
           <section className="dashboard-card todo-card">
-            <div className="section-heading compact"><h2>To-Do List</h2><button className="primary-pill" onClick={() => openNew("todo")}><Plus size={16} /> Add task</button></div>
+            <div className="section-heading compact"><h2>To-Do List</h2><button className="btn-primary" onClick={() => openNew("todo")}><Plus size={16} /> Add task</button></div>
             <TaskList tasks={todoTasks} list="todo" onEdit={openEdit} onToggle={(id) => runTaskAction(() => toggleTask(id))} onDelete={(task) => { setDeleteTaskTarget(task); setDeleteError(""); }} onRemind={openEdit} />
             {!hasTaskError && todoTasks.length === 0 && <p className="empty-note">No to-dos yet. Add one to get started.</p>}
             {hasTaskError && <p className="empty-note">Tasks could not be loaded. Please refresh to try again.</p>}
@@ -243,7 +243,7 @@ export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gm
                 <div className="reminder-input-wrap"><input id="task-reminder" name="remind_at" type="datetime-local" className="text-field" defaultValue={dateInput(dialogTask?.reminderAt ?? null)} /><ChevronDown size={16} /></div>
                 {formError && <p className="form-error" role="alert">{formError}</p>}
               </div>
-              <div className="dialog-footer"><button type="button" className="secondary-pill" onClick={() => setDialogTask(undefined)}>Cancel</button><button type="submit" className="primary-pill" disabled={isPending}>{isPending ? "Saving…" : "Confirm"}</button></div>
+              <div className="dialog-footer"><button type="button" className="btn-secondary" onClick={() => setDialogTask(undefined)}>Cancel</button><button type="submit" className="btn-primary" disabled={isPending}>{isPending ? "Saving…" : "Confirm"}</button></div>
             </form>
           </section>
         </div>
@@ -261,7 +261,7 @@ export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gm
                 <p className="reminder-help">Reminders are checked once a day and may arrive up to 24 hours late. Leave blank to remove the pending reminder.</p>
                 {formError && <p className="form-error" role="alert">{formError}</p>}
               </div>
-              <div className="dialog-footer"><button type="button" className="secondary-pill" onClick={() => setReminderTask(null)}>Cancel</button><button type="submit" className="primary-pill" disabled={isPending}>{isPending ? "Saving…" : "Save reminder"}</button></div>
+              <div className="dialog-footer"><button type="button" className="btn-secondary" onClick={() => setReminderTask(null)}>Cancel</button><button type="submit" className="btn-primary" disabled={isPending}>{isPending ? "Saving…" : "Save reminder"}</button></div>
             </form>
           </section>
         </div>
@@ -293,8 +293,8 @@ function ConfirmationDialog({ task, error, isPending, onCancel, onConfirm }: {
         {error && <p className="form-error" role="alert">{error}</p>}
       </div>
       <div className="dialog-footer">
-        <button type="button" className="secondary-pill" onClick={onCancel} disabled={isPending}>Cancel</button>
-        <button type="button" className="danger-pill" onClick={onConfirm} disabled={isPending}>{isPending ? "Deleting…" : "Delete task"}</button>
+        <button type="button" className="btn-secondary" onClick={onCancel} disabled={isPending}>Cancel</button>
+        <button type="button" className="btn-secondary danger-button" onClick={onConfirm} disabled={isPending}>{isPending ? "Deleting…" : "Delete task"}</button>
       </div>
     </section>
   </div>;

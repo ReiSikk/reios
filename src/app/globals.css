@@ -191,6 +191,16 @@
 .email-copy small { color: var(--reios-blue); font-size: 12px; }
 .email-copy small i { padding: 0 2px; font-style: normal; }
 .unread-badge { flex: none; border-radius: 999px; background: #292a2d; padding: 6px 11px; color: var(--reios-blue); font-size: 11px; font-weight: 600; }
+.invoice-hint { margin: -8px 0 15px; color: var(--reios-muted); font-size: 12px; line-height: 1.5; }
+.invoice-list { display: flex; flex-direction: column; gap: 7px; }
+.invoice-row { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid #2b2c30; border-radius: 9px; background: #1a1b1e; padding: 11px 12px; color: inherit; text-decoration: none; }
+.invoice-row:hover { border-color: #48515a; background: #202124; }
+.invoice-copy { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
+.invoice-copy b, .invoice-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.invoice-copy b { font-size: 13px; font-weight: 650; }
+.invoice-copy small { color: var(--reios-muted); font-size: 11px; }
+.invoice-copy i { padding: 0 3px; color: var(--reios-blue); font-style: normal; }
+.invoice-label { flex: none; border-radius: 999px; background: #29343a; padding: 5px 9px; color: var(--reios-blue); font-size: 10px; font-weight: 650; }
 .integration-state { display: flex; min-height: 105px; align-items: center; justify-content: center; flex-direction: column; gap: 12px; text-align: center; }
 .integration-state p { margin: 0; color: #a2a3a8; font-size: 14px; }
 .calendar-card { padding: 25px 26px; }
@@ -229,6 +239,11 @@
 .form-error { margin: 13px 0 0; color: #ff9c9c; font-size: 13px; }
 .dashboard-toast { position: fixed; right: 22px; bottom: 22px; z-index: 40; display: flex; align-items: center; gap: 14px; border: 1px solid #45464b; border-radius: 10px; background: #202124; padding: 12px 15px; font-size: 14px; box-shadow: 0 8px 30px #0008; }
 .dashboard-toast button { display: grid; place-items: center; border: 0; background: transparent; color: #ddd; cursor: pointer; }
+.login-error-state { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+.login-error-state p { margin: 0; }
+.error-screen { display: flex; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center; }
+.error-screen h1 { margin: 0; font-size: clamp(28px, 6vw, 42px); letter-spacing: -0.04em; }
+.error-copy { margin: 0 0 10px; color: var(--reios-muted); }
 @media (max-width: 640px) {
   .dashboard-shell { padding-top: 24px; }
   .dashboard-shell > header { margin-bottom: 30px; }

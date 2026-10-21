@@ -2,7 +2,8 @@
 
 import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, CalendarDays, Check, ChevronDown, Circle, Inbox, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Bell, CalendarDays, Check, ChevronDown, Circle, FileText, Inbox, Pencil, Plus, Trash2, X } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import { deleteTask, saveTask, setTaskReminder, toggleTask } from "@/lib/tasks/actions";
 
 type Task = {
@@ -17,7 +18,7 @@ type Task = {
 
 type GmailEmail = { id: string; sender: string; subject: string; category: string; receivedAt: string; unread: boolean };
 type GmailInbox =
-  | { status: "connected"; unreadCount: number; emails: GmailEmail[] }
+  | { status: "connected"; unreadCount: number; emails: GmailEmail[]; invoices: GmailEmail[] }
   | { status: "reconnect" }
   | { status: "error" };
 type GoogleCalendar =
@@ -73,6 +74,15 @@ function relativeTime(value: string): string {
 }
 
 export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gmail, googleCalendar, calendarDays, calendarRange }: DashboardProps) {
+  const prefersReducedMotion = useReducedMotion();
+  const revealVariants = {
+    hidden: { opacity: prefersReducedMotion ? 1 : 0, y: prefersReducedMotion ? 0 : 8 },
+    visible: { opacity: 1, y: 0, transition: { duration: prefersReducedMotion ? 0 : 0.38, ease: "easeOut" as const } },
+  };
+  const staggerVariants = {
+    hidden: {},
+    visible: { transition: { staggerChildren: prefersReducedMotion ? 0 : 0.075, delayChildren: prefersReducedMotion ? 0 : 0.04 } },
+  };
   const [dialogTask, setDialogTask] = useState<Task | null | undefined>(undefined);
   const [reminderTask, setReminderTask] = useState<Task | null>(null);
   const [deleteTaskTarget, setDeleteTaskTarget] = useState<Task | null>(null);
@@ -156,7 +166,7 @@ export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gm
 
   return (
     <main className="dashboard-shell min-h-screen px-5 pb-10 pt-8 sm:px-8 lg:px-10">
-      <header className="mx-auto mb-12 flex w-full max-w-[1480px] items-center justify-between">
+      <motion.header variants={revealVariants} initial="hidden" animate="visible" className="mx-auto mb-12 flex w-full max-w-[1480px] items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="brand-mark">R</div>
           <div>
@@ -165,11 +175,11 @@ export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gm
           </div>
         </div>
         <div className="owner-pill"><span className="owner-avatar">R</span><span><b>{ownerName}</b><small>Admin</small></span></div>
-      </header>
+      </motion.header>
 
-      <div className="mx-auto grid w-full max-w-[1480px] grid-cols-1 items-start gap-5 xl:grid-cols-2">
-        <div className="flex flex-col gap-7">
-          <section className="dashboard-card task-card">
+      <motion.div variants={staggerVariants} initial="hidden" animate="visible" className="mx-auto grid w-full max-w-[1480px] grid-cols-1 items-start gap-5 xl:grid-cols-2">
+        <motion.div variants={staggerVariants} className="flex flex-col gap-5">
+          <motion.section variants={revealVariants} className="dashboard-card task-card">
             <div className="section-heading">
               <div><h1>Home Admin</h1><p>Personal task orchestration</p></div>
               <button className="btn-primary" onClick={() => openNew("home_admin")}><Plus size={16} /> Add task</button>
@@ -178,12 +188,25 @@ export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gm
             {hasTaskError && <p className="empty-note">Tasks could not be loaded. Please refresh to try again.</p>}
             {!hasTaskError && hasReminderError && <p className="empty-note">Reminder settings could not be loaded.</p>}
             {!hasTaskError && homeTasks.length === 0 && <p className="empty-note">No home tasks yet. Add one to get started.</p>}
-          </section>
+          </motion.section>
+          <motion.section variants={revealVariants} className="dashboard-card invoices-card">
+            <div className="section-heading compact"><h2><FileText size={19} /> Invoices</h2><span className="accent-text">{gmail.status === "connected" ? `${gmail.invoices.length} found` : "Gmail"}</span></div>
+            <p className="invoice-hint">Recent Gmail matches for “arve” or “invoice” over the last 90 days. Payment status isn&apos;t inferred.</p>
+            {gmail.status === "connected" && gmail.invoices.length > 0 && <div className="invoice-list">
+              {gmail.invoices.map((invoice) => <a className="invoice-row" key={invoice.id} href={`https://mail.google.com/mail/u/0/#all/${encodeURIComponent(invoice.id)}`} target="_blank" rel="noreferrer">
+                <span className="invoice-copy"><b>{invoice.subject}</b><small>{invoice.sender} <i>•</i> {relativeTime(invoice.receivedAt)}</small></span>
+                <span className="invoice-label">Invoice</span>
+              </a>)}
+            </div>}
+            {gmail.status === "connected" && gmail.invoices.length === 0 && <div className="integration-empty">No recent invoice emails found.</div>}
+            {gmail.status === "reconnect" && <div className="integration-state"><p>Reconnect Google to check for invoices.</p><a className="btn-secondary" href="/login">Reconnect Google</a></div>}
+            {gmail.status === "error" && <div className="integration-empty">Invoices are temporarily unavailable. Please refresh to try again.</div>}
+          </motion.section>
 
-        </div>
+        </motion.div>
 
-        <div className="flex flex-col gap-5">
-          <section className="dashboard-card inbox-card">
+        <motion.div variants={staggerVariants} className="flex flex-col gap-5">
+          <motion.section variants={revealVariants} className="dashboard-card inbox-card">
             <div className="section-heading compact"><h2><Inbox size={19} /> Google Inbox</h2><span className="accent-text">{gmail.status === "connected" ? `${gmail.unreadCount} unread` : "Inbox"}</span></div>
             {gmail.status === "connected" && gmail.emails.length > 0 && <div className="email-list">
               {gmail.emails.map((email) => <a className="email-row" key={email.id} href={`https://mail.google.com/mail/u/0/#all/${encodeURIComponent(email.id)}`} target="_blank" rel="noreferrer">
@@ -195,8 +218,8 @@ export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gm
             {gmail.status === "connected" && gmail.emails.length === 0 && <div className="integration-empty">No important unread emails right now.</div>}
             {gmail.status === "reconnect" && <div className="integration-state"><p>Google access expired or was revoked.</p><a className="btn-secondary" href="/login">Reconnect Google</a></div>}
             {gmail.status === "error" && <div className="integration-empty">Inbox is temporarily unavailable. Please refresh to try again.</div>}
-          </section>
-          <section className="dashboard-card calendar-card">
+          </motion.section>
+          <motion.section variants={revealVariants} className="dashboard-card calendar-card">
             <div className="section-heading compact"><h2><CalendarDays size={19} /> Calendar Preview</h2><span className="accent-text">{calendarRange}</span></div>
             {googleCalendar.status === "reconnect" && <p className="calendar-status">Connect Google Calendar to see events. <a href="/login">Reconnect Google</a></p>}
             {googleCalendar.status === "error" && <p className="calendar-status">Google Calendar is temporarily unavailable. Showing task due dates.</p>}
@@ -212,15 +235,15 @@ export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gm
                 </ul> : <span className="calendar-none">No tasks</span>}
               </article>)}
             </div>}
-          </section>
-          <section className="dashboard-card todo-card">
+          </motion.section>
+          <motion.section variants={revealVariants} className="dashboard-card todo-card">
             <div className="section-heading compact"><h2>To-Do List</h2><button className="btn-primary" onClick={() => openNew("todo")}><Plus size={16} /> Add task</button></div>
             <TaskList tasks={todoTasks} list="todo" onEdit={openEdit} onToggle={(id) => runTaskAction(() => toggleTask(id))} onDelete={(task) => { setDeleteTaskTarget(task); setDeleteError(""); }} onRemind={openEdit} />
             {!hasTaskError && todoTasks.length === 0 && <p className="empty-note">No to-dos yet. Add one to get started.</p>}
             {hasTaskError && <p className="empty-note">Tasks could not be loaded. Please refresh to try again.</p>}
-          </section>
-        </div>
-      </div>
+          </motion.section>
+        </motion.div>
+      </motion.div>
 
       {formError && dialogTask === undefined && !reminderTask && <div className="dashboard-toast" role="status">{formError}<button onClick={() => setFormError("")} aria-label="Dismiss"><X size={15} /></button></div>}
       {dialogTask !== undefined && (

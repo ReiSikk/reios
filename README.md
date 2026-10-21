@@ -1,6 +1,6 @@
 # REIOS
 
-REIOS is a private personal admin dashboard for one owner. It includes Home Admin and To-Do task lists, email reminders, a read-only Gmail inbox preview, and an eight-day task calendar.
+REIOS is a private personal admin dashboard for one owner. It includes Home Admin and To-Do task lists, email reminders, a read-only Gmail inbox and invoice overview, and an eight-day Google Calendar and task preview.
 
 ## Requirements
 
@@ -52,7 +52,7 @@ For local development, also add:
 
 `http://localhost:3000/api/auth/callback/google`
 
-The application requests `openid`, `email`, `profile`, `https://www.googleapis.com/auth/gmail.readonly`, `https://www.googleapis.com/auth/calendar.events.readonly`, and `https://www.googleapis.com/auth/calendar.calendarlist.readonly`. Enable both the Gmail API and Google Calendar API in Google Cloud, and include the Gmail and Calendar read-only scopes in the OAuth consent screen's Data Access configuration. Set `OWNER_EMAIL` to the account that should be allowed through the sign-in callback. Google access and refresh tokens are encrypted before storage. Gmail reads message metadata only; Calendar reads events from calendars in the owner's Google Calendar list. Neither integration modifies Google data.
+The application requests `openid`, `email`, `profile`, `https://www.googleapis.com/auth/gmail.readonly`, `https://www.googleapis.com/auth/calendar.events.readonly`, and `https://www.googleapis.com/auth/calendar.calendarlist.readonly`. Enable both the Gmail API and Google Calendar API in Google Cloud, and include the Gmail and Calendar read-only scopes in the OAuth consent screen's Data Access configuration. Set `OWNER_EMAIL` to the account that should be allowed through the sign-in callback. Google access and refresh tokens are encrypted before storage. Gmail reads message metadata only; its invoice overview uses the Gmail query `newer_than:90d {arve invoice}` and marks matches as Invoice inside REIOS. It does not determine payment status or modify Gmail. Calendar reads events from calendars in the owner's Google Calendar list and does not modify them.
 
 ### Resend
 

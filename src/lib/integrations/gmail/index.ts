@@ -2,7 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 import { getGoogleAccessToken, RevokedGoogleToken } from "@/lib/integrations/google-token";
-import { GMAIL_CACHE_MS, GMAIL_IMPORTANCE_QUERY, GMAIL_MESSAGE_LIMIT } from "./config";
+import { GMAIL_CACHE_MS, GMAIL_IMPORTANCE_QUERY, GMAIL_INVOICE_LIMIT, GMAIL_INVOICE_QUERY, GMAIL_MESSAGE_LIMIT } from "./config";
 
 export type GmailEmail = {
   id: string;
@@ -14,7 +14,7 @@ export type GmailEmail = {
 };
 
 export type GmailInboxResult =
-  | { status: "connected"; unreadCount: number; emails: GmailEmail[] }
+  | { status: "connected"; unreadCount: number; emails: GmailEmail[]; invoices: GmailEmail[] }
   | { status: "reconnect" }
   | { status: "error" };
 
@@ -34,6 +34,8 @@ const messageSchema = z.object({
 
 let cachedResult: GmailInboxResult | undefined;
 let cachedUntil = 0;
+
+class ExpiredGoogleAccessToken extends Error {}
 
 async function gmailGet(path: string, accessToken: string): Promise<Response> {
   return fetch(`https://gmail.googleapis.com/gmail/v1/users/me/${path}`, {
@@ -67,41 +69,54 @@ function parseMessage(message: z.infer<typeof messageSchema>): GmailEmail {
   };
 }
 
-async function loadInbox(): Promise<GmailInboxResult> {
-  let accessToken = await getGoogleAccessToken();
-  const query = new URLSearchParams({ q: GMAIL_IMPORTANCE_QUERY, maxResults: String(GMAIL_MESSAGE_LIMIT) });
-  let listResponse = await gmailGet(`messages?${query}`, accessToken);
-  if (listResponse.status === 401) {
-    accessToken = await getGoogleAccessToken(true);
-    listResponse = await gmailGet(`messages?${query}`, accessToken);
-  }
-  if (listResponse.status === 401 || listResponse.status === 403) throw new RevokedGoogleToken("Gmail access was rejected.");
-  if (!listResponse.ok) throw new Error("Gmail messages could not be loaded.");
-  const listResult = messageListSchema.safeParse(await listResponse.json());
+async function loadMessageSummaries(queryText: string, limit: number, accessToken: string): Promise<GmailEmail[]> {
+  const query = new URLSearchParams({ q: queryText, maxResults: String(limit) });
+  const response = await gmailGet(`messages?${query}`, accessToken);
+  if (response.status === 401) throw new ExpiredGoogleAccessToken("Google access token expired.");
+  if (response.status === 403) throw new RevokedGoogleToken("Gmail access was rejected.");
+  if (!response.ok) throw new Error("Gmail messages could not be loaded.");
+  const listResult = messageListSchema.safeParse(await response.json());
   if (!listResult.success) throw new Error("Gmail returned an invalid message list.");
 
-  const unreadQuery = new URLSearchParams({ q: "is:unread", maxResults: "1" });
-  const [unreadResponse, messageResults] = await Promise.all([
-    gmailGet(`messages?${unreadQuery}`, accessToken),
-    Promise.all((listResult.data.messages ?? []).map(async ({ id }) => {
-      const response = await gmailGet(`messages/${encodeURIComponent(id)}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`, accessToken);
-      if (response.status === 401 || response.status === 403) throw new RevokedGoogleToken("Gmail access was rejected.");
-      if (!response.ok) throw new Error("Gmail message metadata could not be loaded.");
-      const message = messageSchema.safeParse(await response.json());
-      if (!message.success) throw new Error("Gmail returned invalid message metadata.");
-      return parseMessage(message.data);
-    })),
-  ]);
-  if (unreadResponse.status === 401 || unreadResponse.status === 403) throw new RevokedGoogleToken("Gmail access was rejected.");
-  if (!unreadResponse.ok) throw new Error("Gmail unread count could not be loaded.");
-  const unreadResult = messageListSchema.safeParse(await unreadResponse.json());
-  if (!unreadResult.success) throw new Error("Gmail returned an invalid unread count.");
+  return Promise.all((listResult.data.messages ?? []).map(async ({ id }) => {
+    const messageResponse = await gmailGet(`messages/${encodeURIComponent(id)}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`, accessToken);
+    if (messageResponse.status === 401) throw new ExpiredGoogleAccessToken("Google access token expired.");
+    if (messageResponse.status === 403) throw new RevokedGoogleToken("Gmail access was rejected.");
+    if (!messageResponse.ok) throw new Error("Gmail message metadata could not be loaded.");
+    const message = messageSchema.safeParse(await messageResponse.json());
+    if (!message.success) throw new Error("Gmail returned invalid message metadata.");
+    return parseMessage(message.data);
+  }));
+}
 
-  return {
-    status: "connected",
-    unreadCount: unreadResult.data.resultSizeEstimate ?? 0,
-    emails: messageResults,
-  };
+async function loadUnreadCount(accessToken: string): Promise<number> {
+  const query = new URLSearchParams({ q: "is:unread", maxResults: "1" });
+  const response = await gmailGet(`messages?${query}`, accessToken);
+  if (response.status === 401) throw new ExpiredGoogleAccessToken("Google access token expired.");
+  if (response.status === 403) throw new RevokedGoogleToken("Gmail access was rejected.");
+  if (!response.ok) throw new Error("Gmail unread count could not be loaded.");
+  const unreadResult = messageListSchema.safeParse(await response.json());
+  if (!unreadResult.success) throw new Error("Gmail returned an invalid unread count.");
+  return unreadResult.data.resultSizeEstimate ?? 0;
+}
+
+async function loadInboxData(accessToken: string): Promise<GmailInboxResult> {
+  const [emails, invoices, unreadCount] = await Promise.all([
+    loadMessageSummaries(GMAIL_IMPORTANCE_QUERY, GMAIL_MESSAGE_LIMIT, accessToken),
+    loadMessageSummaries(GMAIL_INVOICE_QUERY, GMAIL_INVOICE_LIMIT, accessToken),
+    loadUnreadCount(accessToken),
+  ]);
+  return { status: "connected", unreadCount, emails, invoices };
+}
+
+async function loadInbox(): Promise<GmailInboxResult> {
+  const accessToken = await getGoogleAccessToken();
+  try {
+    return await loadInboxData(accessToken);
+  } catch (error) {
+    if (!(error instanceof ExpiredGoogleAccessToken)) throw error;
+    return loadInboxData(await getGoogleAccessToken(true));
+  }
 }
 
 export async function getImportantEmails(): Promise<GmailInboxResult> {

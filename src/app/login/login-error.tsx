@@ -8,8 +8,9 @@ export function LoginError() {
   if (searchParams.get("error") !== "AccessDenied") return null;
 
   return (
-    <p role="alert" className="text-sm text-destructive">
-      Access is restricted to the configured owner account.
-    </p>
+    <div role="alert" className="login-error-state">
+      <p className="text-sm text-destructive">Access is restricted to the configured owner account.</p>
+      <a className="btn-secondary" href="/login">Try again</a>
+    </div>
   );
 }

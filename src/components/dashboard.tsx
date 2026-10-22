@@ -194,7 +194,7 @@ export function Dashboard({ ownerName, tasks, hasTaskError, hasReminderError, gm
             <p className="invoice-hint">Recent Gmail matches for “arve” or “invoice” over the last 90 days. Payment status isn&apos;t inferred.</p>
             {gmail.status === "connected" && gmail.invoices.length > 0 && <div className="invoice-list">
               {gmail.invoices.map((invoice) => <a className="invoice-row" key={invoice.id} href={`https://mail.google.com/mail/u/0/#all/${encodeURIComponent(invoice.id)}`} target="_blank" rel="noreferrer">
-                <span className="invoice-copy"><b>{invoice.subject}</b><small>{invoice.sender} <i>•</i> {relativeTime(invoice.receivedAt)}</small></span>
+                <span className="invoice-copy"><b>{invoice.subject}</b><small><span>{invoice.sender}</span><span>{relativeTime(invoice.receivedAt)}</span></small></span>
                 <span className="invoice-label">Invoice</span>
               </a>)}
             </div>}

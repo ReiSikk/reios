@@ -1,7 +1,7 @@
-import { Suspense } from "react";
-import { Button } from "@/components/ui/button";
-import { signInWithGoogle } from "@/app/login/actions";
-import { LoginError } from "@/app/login/login-error";
+import { Suspense } from 'react';
+import { Button } from '@/components/ui/button';
+import { signInWithGoogle } from '@/app/login/actions';
+import { LoginError } from '@/app/login/login-error';
 
 export default function LoginPage() {
   return (
@@ -15,7 +15,9 @@ export default function LoginPage() {
         <LoginError />
       </Suspense>
       <form action={signInWithGoogle}>
-        <Button type="submit" className="w-full btn-primary">Continue with Google</Button>
+        <Button type="submit" className="w-full btn-primary">
+          Continue with Google
+        </Button>
       </form>
     </main>
   );

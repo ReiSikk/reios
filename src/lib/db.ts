@@ -1,6 +1,6 @@
-import "server-only";
+import 'server-only';
 
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 let adminClient: SupabaseClient | undefined;
 
@@ -11,7 +11,7 @@ export function getSupabaseAdmin(): SupabaseClient {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !serviceRoleKey) {
-    throw new Error("Supabase server environment variables are not configured.");
+    throw new Error('Supabase server environment variables are not configured.');
   }
 
   adminClient = createClient(url, serviceRoleKey, {

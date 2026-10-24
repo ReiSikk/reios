@@ -20,19 +20,19 @@ REIOS is a private personal admin dashboard for one owner. It includes Home Admi
 
 ### Environment variables
 
-| Variable | Purpose |
-| --- | --- |
-| `OWNER_EMAIL` | The only Google account allowed to sign in; use the same address for reminder delivery. |
-| `AUTH_SECRET` | Auth.js session encryption secret. |
-| `AUTH_GOOGLE_ID` | Google OAuth client ID. |
-| `AUTH_GOOGLE_SECRET` | Google OAuth client secret. |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL. |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server-only Supabase service role key. Never expose it to browser code. |
-| `RESEND_API_KEY` | Resend API key used for task reminders. |
-| `RESEND_FROM_EMAIL` | Verified sender address in Resend. |
-| `ENCRYPTION_KEY` | Base64 encoding of exactly 32 random bytes for encrypted Google tokens. |
-| `CRON_SECRET` | Random secret used to protect `/api/cron/send-reminders`. |
-| `APP_URL` | Public app URL used in reminder emails. |
+| Variable                    | Purpose                                                                                 |
+| --------------------------- | --------------------------------------------------------------------------------------- |
+| `OWNER_EMAIL`               | The only Google account allowed to sign in; use the same address for reminder delivery. |
+| `AUTH_SECRET`               | Auth.js session encryption secret.                                                      |
+| `AUTH_GOOGLE_ID`            | Google OAuth client ID.                                                                 |
+| `AUTH_GOOGLE_SECRET`        | Google OAuth client secret.                                                             |
+| `NEXT_PUBLIC_SUPABASE_URL`  | Supabase project URL.                                                                   |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only Supabase service role key. Never expose it to browser code.                 |
+| `RESEND_API_KEY`            | Resend API key used for task reminders.                                                 |
+| `RESEND_FROM_EMAIL`         | Verified sender address in Resend.                                                      |
+| `ENCRYPTION_KEY`            | Base64 encoding of exactly 32 random bytes for encrypted Google tokens.                 |
+| `CRON_SECRET`               | Random secret used to protect `/api/cron/send-reminders`.                               |
+| `APP_URL`                   | Public app URL used in reminder emails.                                                 |
 
 Generate `AUTH_SECRET` with `openssl rand -base64 32`, and generate `ENCRYPTION_KEY` with `openssl rand -base64 32`. Keep `.env.local` out of version control.
 
@@ -52,7 +52,7 @@ For local development, also add:
 
 `http://localhost:3000/api/auth/callback/google`
 
-The application requests `openid`, `email`, `profile`, `https://www.googleapis.com/auth/gmail.readonly`, `https://www.googleapis.com/auth/calendar.events.readonly`, and `https://www.googleapis.com/auth/calendar.calendarlist.readonly`. Enable both the Gmail API and Google Calendar API in Google Cloud, and include the Gmail and Calendar read-only scopes in the OAuth consent screen's Data Access configuration. Set `OWNER_EMAIL` to the account that should be allowed through the sign-in callback. Google access and refresh tokens are encrypted before storage. Gmail reads message metadata only; its invoice overview uses the Gmail query `newer_than:90d {arve invoice}` and marks matches as Invoice inside REIOS. It does not determine payment status or modify Gmail. Calendar reads events from calendars in the owner's Google Calendar list and does not modify them.
+The application requests `openid`, `email`, `profile`, `https://www.googleapis.com/auth/gmail.readonly`, `https://www.googleapis.com/auth/calendar.events.readonly`, and `https://www.googleapis.com/auth/calendar.calendarlist.readonly`. Enable both the Gmail API and Google Calendar API in Google Cloud, and include the Gmail and Calendar read-only scopes in the OAuth consent screen's Data Access configuration. Set `OWNER_EMAIL` to the account that should be allowed through the sign-in callback. Google access and refresh tokens are encrypted before storage. Gmail reads message metadata only; the invoice overview searches recent messages matching `arve` or `invoice`, then includes only senders listed in `INVOICE_SENDER_FILTER` in `src/lib/integrations/gmail/config.ts`. Add company names to `companyNames` and optional sender fragments such as billing addresses or domains to `senderKeywords`. Matching checks the Gmail sender header and is case-insensitive. The list is capped at 12 entries, does not determine payment status, and never modifies Gmail. Calendar reads events from calendars in the owner's Google Calendar list and does not modify them.
 
 ### Resend
 

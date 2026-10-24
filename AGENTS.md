@@ -124,12 +124,14 @@ Never print, log or commit secret values.
 Complete one phase, run lint + typecheck + manual verification, commit, then stop and report before starting the next phase. Use small, conventional commits (`feat:`, `fix:`, `chore:`).
 
 ### Phase 0: Foundation
+
 - Confirm the Next.js + TypeScript + Tailwind project builds. Install shadcn/ui, `zod`, `@supabase/supabase-js`, `resend`, `next-auth@beta`, `lucide-react`.
 - Add `typecheck` script, `.env.example`, strict TS, ESLint, Prettier (optional).
 - Set up Supabase CLI migrations (`supabase/`) and the first migration with all tables from section 6 plus RLS.
 - **Done when**: app runs, migration applies to the Supabase project, `npm run build` passes.
 
 ### Phase 1: Authentication
+
 - Auth.js with Google provider, `access_type=offline`, `prompt=consent`, scopes `openid email profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.events.readonly https://www.googleapis.com/auth/calendar.calendarlist.readonly`.
 - `signIn` callback rejects any email that is not `OWNER_EMAIL`.
 - On sign-in, store the Google refresh/access token encrypted in `integrations`.
@@ -137,7 +139,9 @@ Complete one phase, run lint + typecheck + manual verification, commit, then sto
 - **Done when**: only the owner can log in; others are rejected; unauthenticated visits redirect to `/login`.
 
 ### Phase 2: Tasks (Home Admin + To-Do)
-*(Requires the Figma context.)*
+
+_(Requires the Figma context.)_
+
 - Build the dashboard shell (header, user pill, grid) from Figma.
 - Implement both task cards using the shared `tasks` table: add, edit, toggle done, delete, due label ("Today", "Tomorrow", "This week", "Next Monday", dates).
 - Add-task dialog with title, category, due date, list, optional reminder time.
@@ -145,6 +149,7 @@ Complete one phase, run lint + typecheck + manual verification, commit, then sto
 - **Done when**: full CRUD works for both lists and persists in Supabase.
 
 ### Phase 3: Email reminders
+
 - Bell icon opens a reminder picker; creates/updates/deletes rows in `reminders`.
 - `GET /api/cron/send-reminders`: verifies `Authorization: Bearer ${CRON_SECRET}`; selects reminders with `remind_at <= now()` and `sent_at is null` for tasks that are not done; sends one email per reminder via Resend to `OWNER_EMAIL`; sets `sent_at` only after a successful send; is idempotent (safe to run twice).
 - Email template: plain, minimal HTML with task title, category, due date and a link to the app.
@@ -152,6 +157,7 @@ Complete one phase, run lint + typecheck + manual verification, commit, then sto
 - **Done when**: a reminder set a few minutes ahead arrives in the owner's inbox exactly once.
 
 ### Phase 4: Gmail important emails
+
 - `src/lib/integrations/gmail`: fetch via Gmail API (`users.messages.list` with a query, then `messages.get` with `format=metadata` for From, Subject, Date, labels). Never fetch full bodies unless asked.
 - `src/lib/integrations/calendar`: read events from the owner's primary Google Calendar using the read-only Calendar scope.
 - Default importance query: `is:unread (is:important OR category:primary) newer_than:7d`. Keep the query and any VIP sender/keyword rules in one config file so the owner can edit it in code.
@@ -161,6 +167,7 @@ Complete one phase, run lint + typecheck + manual verification, commit, then sto
 - **Done when**: the card shows real important emails and degrades gracefully if the token is revoked (show a "Reconnect Google" button).
 
 ### Phase 5: Calendar preview, polish, deploy
+
 - Calendar Preview: 8-day strip from today, today highlighted, entries from Google Calendar events and tasks due that day.
 - Responsive layout (mobile first check), accessible labels on icon buttons, keyboard focus states.
 - Write `README.md`: setup, env vars, Google Cloud / Supabase / Resend setup, deploy steps.

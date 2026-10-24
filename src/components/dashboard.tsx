@@ -114,6 +114,11 @@ function invoiceCompanyLabel(company: string): string {
   return company.charAt(0).toLocaleUpperCase() + company.slice(1);
 }
 
+function invoiceCompanyClass(company: string | null): string {
+  const key = company?.toLocaleLowerCase().replace(/[^a-z0-9]+/g, '-') ?? 'generic';
+  return `invoice-label--${key}`;
+}
+
 export function Dashboard({
   ownerName,
   tasks,
@@ -384,8 +389,10 @@ export function Dashboard({
                         <span>{relativeTime(invoice.receivedAt)}</span>
                       </small>
                     </span>
-                    <span className="invoice-label">
-                      {invoice.company ? invoiceCompanyLabel(invoice.company) : 'Invoice'}
+                    <span className={`invoice-label ${invoiceCompanyClass(invoice.company)}`}>
+                      <span className="invoice-label-text">
+                        {invoice.company ? invoiceCompanyLabel(invoice.company) : 'Invoice'}
+                      </span>
                     </span>
                   </a>
                 ))}

@@ -33,6 +33,8 @@ REIOS is a private personal admin dashboard for one owner. It includes Home Admi
 | `ENCRYPTION_KEY`            | Base64 encoding of exactly 32 random bytes for encrypted Google tokens.                 |
 | `CRON_SECRET`               | Random secret used to protect `/api/cron/send-reminders`.                               |
 | `APP_URL`                   | Public app URL used in reminder emails.                                                 |
+| `LHV_ACCESS_TOKEN`          | Initial LHV API access token; imported into encrypted server storage on first use.      |
+| `LHV_REFRESH_TOKEN`         | Initial LHV API refresh token; used only by server code to renew access.                |
 
 Generate `AUTH_SECRET` with `openssl rand -base64 32`, and generate `ENCRYPTION_KEY` with `openssl rand -base64 32`. Keep `.env.local` out of version control.
 
@@ -53,6 +55,10 @@ For local development, also add:
 `http://localhost:3000/api/auth/callback/google`
 
 The application requests `openid`, `email`, `profile`, `https://www.googleapis.com/auth/gmail.readonly`, `https://www.googleapis.com/auth/calendar.events.readonly`, and `https://www.googleapis.com/auth/calendar.calendarlist.readonly`. Enable both the Gmail API and Google Calendar API in Google Cloud, and include the Gmail and Calendar read-only scopes in the OAuth consent screen's Data Access configuration. Set `OWNER_EMAIL` to the account that should be allowed through the sign-in callback. Google access and refresh tokens are encrypted before storage. Gmail reads message metadata only; the invoice overview searches recent messages matching `arve` or `invoice`, then includes only senders listed in `INVOICE_SENDER_FILTER` in `src/lib/integrations/gmail/config.ts`. Add company names to `companyNames` and optional sender fragments such as billing addresses or domains to `senderKeywords`. Matching checks the Gmail sender header and is case-insensitive. The list is capped at 12 entries, does not determine payment status, and never modifies Gmail. Calendar reads events from calendars in the owner's Google Calendar list and does not modify them.
+
+### LHV accounts
+
+Set `LHV_ACCESS_TOKEN` and `LHV_REFRESH_TOKEN` from the LHV API token page, granting read-only account access. The dashboard shows the configured main and savings account balances, a summary of investment holdings, and their combined total. Tokens are encrypted in the `integrations` table and access tokens are refreshed on the server. Apply the LHV integration migration before loading the dashboard.
 
 ### Resend
 

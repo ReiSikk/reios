@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition, type SubmitEvent } from 'react';
+import { useEffect, useState, useTransition, type ReactNode, type SubmitEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Bell,
@@ -71,6 +71,7 @@ type DashboardProps = {
   googleCalendar: GoogleCalendar;
   calendarDays: CalendarPreviewDay[];
   calendarRange: string;
+  lhvSection: ReactNode;
 };
 
 function dueLabel(date: string | null): string {
@@ -128,6 +129,7 @@ export function Dashboard({
   googleCalendar,
   calendarDays,
   calendarRange,
+  lhvSection,
 }: DashboardProps) {
   const prefersReducedMotion = useReducedMotion();
   const revealVariants = {
@@ -473,6 +475,7 @@ export function Dashboard({
               </div>
             )}
           </motion.section>
+          {lhvSection}
           <motion.section variants={revealVariants} className="dashboard-card calendar-card">
             <div className="section-heading compact">
               <h2>

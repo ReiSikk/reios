@@ -4,13 +4,17 @@ import { getSupabaseAdmin } from '@/lib/db';
 import { Dashboard } from '@/components/dashboard';
 import { getImportantEmails } from '@/lib/integrations/gmail';
 import { getUpcomingCalendarEvents } from '@/lib/integrations/calendar';
+import { getLhvDashboardData } from '@/lib/integrations/lhv';
 import { buildCalendarPreview } from '@/lib/calendar';
+import { LhvAccountsSection } from '@/components/lhv-accounts-section';
 
 export default function Home() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen p-8 text-sm text-muted-foreground">Loading REIOS…</main>
+        <main className="min-h-screen p-8 text-sm text-muted-foreground flex flex-col items-center justify-center shimmer">
+          Loading REIOS…
+        </main>
       }
     >
       <DashboardData />
@@ -21,7 +25,7 @@ export default function Home() {
 async function DashboardData() {
   const owner = await requireOwner();
   const supabase = getSupabaseAdmin();
-  const [tasksResult, remindersResult, gmail, googleCalendar] = await Promise.all([
+  const [tasksResult, remindersResult, gmail, googleCalendar, lhv] = await Promise.all([
     supabase
       .from('tasks')
       .select('id,list,title,category,due_date,done,created_at')
@@ -33,6 +37,7 @@ async function DashboardData() {
       .order('created_at', { ascending: false }),
     getImportantEmails(),
     getUpcomingCalendarEvents(),
+    getLhvDashboardData(),
   ]);
 
   const tasks = tasksResult.error ? [] : (tasksResult.data ?? []);
@@ -57,6 +62,7 @@ async function DashboardData() {
       googleCalendar={googleCalendar}
       calendarDays={calendar.days}
       calendarRange={calendar.range}
+      lhvSection={<LhvAccountsSection key="lhv-overview" data={lhv} />}
     />
   );
 }
